@@ -38,7 +38,43 @@ calc = code.new_calc()
 
 # parameters
 parameters = ParameterData(dict={
-    'param':'value',
+    "GeneralSettings":
+    {
+    "SimulationType"                   : "MonteCarlo",
+    "NumberOfCycles"                   : 25000,
+    "NumberOfInitializationCycles"     : 10000,
+    "RestartFile"                      : "no",
+    "PrintEvery"                       : 1000,
+    "Forcefield"                       : "GarciaPerez2006",
+    "ModifyOxgensConnectedToAluminium" : "yes",
+    "Framework"                        : 0,
+    "FrameworkName"                    : "LTA4A",
+    "RemoveAtomNumberCodeFromLabel"    : "yes",
+    "UnitCells"                        : "1 1 1",
+    "ExternalTemperature"              : 298.0,
+    "ExternalPressure"                 : 10000.0,
+    },
+    "Component":
+    [{
+    "_"                                :0,
+    "MoleculeName"                     : "sodium",
+    "MoleculeDefinition"               : "TraPPE",
+    "TranslationProbability"           :  1.0,
+    "RandomTranslationProbability"     :  1.0,
+    "ExtraFrameworkMolecule"           :  "yes",
+    "CreateNumberOfMolecules"          :  96,
+    },
+    {"_"                                : 1,
+    "MoleculeName"                     : "CO2",
+    "MoleculeDefinition"               : "TraPPE",
+    "BlockPockets"                     : "yes",
+    "BlockPocketsFilename"             : "LTA",
+    "TranslationProbability"           : 1.0,
+    "ReinsertionProbability"           : 1.0,
+    "SwapProbability"                  : 1.0,
+    "ExtraFrameworkMolecule"           : "no",
+    "CreateNumberOfMolecules"          : 0,
+    }],  
     })
 calc.use_parameters(parameters)
 
@@ -49,6 +85,8 @@ calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
 # store and submit
 calc.store_all()
 calc.submit()
+
+#calc.submit_test()
 print("submitted calculation: PK=%s" % calc.pk)
 
 # EOF
