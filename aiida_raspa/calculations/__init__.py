@@ -32,7 +32,7 @@ class RaspaCalculation(JobCalculation):
         """
         super(RaspaCalculation, self)._init_internal_params()
         self._INPUT_FILE_NAME = 'simulation.input'
-        self._OUTPUT_FILE_NAME = 'Output/System*/*dat'
+        self._OUTPUT_FILE_NAME = 'Output/System_0/*data'
         self._DEFAULT_INPUT_FILE = self._INPUT_FILE_NAME
         self._DEFAULT_OUTPUT_FILE = self._OUTPUT_FILE_NAME
         self._PROJECT_NAME = 'aiida'
