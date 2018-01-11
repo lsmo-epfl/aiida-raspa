@@ -50,13 +50,12 @@ parameters = ParameterData(dict={
     "Framework"                        : 0,
     "FrameworkName"                    : "LTA4A",
     "RemoveAtomNumberCodeFromLabel"    : "yes",
-    "UnitCells"                        : "1 1 1",
+    "UnitCells"                        : [1, 1, 1],
     "ExternalTemperature"              : 298.0,
     "ExternalPressure"                 : 10000.0,
     },
     "Component":
     [{
-    "_"                                :0,
     "MoleculeName"                     : "sodium",
     "MoleculeDefinition"               : "TraPPE",
     "TranslationProbability"           :  1.0,
@@ -64,7 +63,7 @@ parameters = ParameterData(dict={
     "ExtraFrameworkMolecule"           :  "yes",
     "CreateNumberOfMolecules"          :  96,
     },
-    {"_"                                : 1,
+    {
     "MoleculeName"                     : "CO2",
     "MoleculeDefinition"               : "TraPPE",
     "BlockPockets"                     : "yes",
