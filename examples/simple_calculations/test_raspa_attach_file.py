@@ -42,7 +42,7 @@ parameters = ParameterData(dict={
     "GeneralSettings":
     {
     "SimulationType"                   : "MonteCarlo",
-    "NumberOfCycles"                   : 25000,
+    "NumberOfCycles"                   : 5000,
     "NumberOfInitializationCycles"     : 2000,
     "PrintEvery"                       : 1000,
     "Forcefield"                       : "zeolite",
@@ -51,7 +51,7 @@ parameters = ParameterData(dict={
     "UnitCells"                        : "3 3 3",
     "HeliumVoidFraction"               : 0.29,
     "ExternalTemperature"              : 300.0,
-    "ExternalPressure"                 : 1e5,
+    "ExternalPressure"                 : 1e6,
     },
     "Component":
     [{
@@ -84,7 +84,7 @@ molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/pseudo_atoms.def')
 calc.use_file(molecule, linkname="pseudo_atoms")
 
 # resources
-calc.set_max_wallclock_seconds(3*60)  # 3 min
+calc.set_max_wallclock_seconds(30*60)  # 30 min
 calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
 
 # store and submit

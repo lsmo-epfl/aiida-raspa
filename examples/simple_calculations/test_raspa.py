@@ -41,8 +41,8 @@ parameters = ParameterData(dict={
     "GeneralSettings":
     {
     "SimulationType"                   : "MonteCarlo",
-    "NumberOfCycles"                   : 25000,
-    "NumberOfInitializationCycles"     : 10000,
+    "NumberOfCycles"                   : 2000,
+    "NumberOfInitializationCycles"     : 1000,
     "RestartFile"                      : "no",
     "PrintEvery"                       : 1000,
     "Forcefield"                       : "GarciaPerez2006",
@@ -78,7 +78,7 @@ parameters = ParameterData(dict={
 calc.use_parameters(parameters)
 
 # resources
-calc.set_max_wallclock_seconds(3*60)  # 3 min
+calc.set_max_wallclock_seconds(30*60)  # 30 min
 calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
 
 # store and submit
