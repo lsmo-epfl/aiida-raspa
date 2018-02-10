@@ -8,6 +8,7 @@
 # For further information please visit http://www.aiida.net                   #
 ###############################################################################
 
+from aiida.orm import load_node
 from aiida.orm.calculation.job import JobCalculation
 from aiida.common.utils import classproperty
 from aiida.orm.data.structure import StructureData
@@ -16,6 +17,7 @@ from aiida.orm.data.singlefile import SinglefileData
 from aiida.orm.data.remote import RemoteData
 from aiida.common.datastructures import CalcInfo, CodeInfo
 from aiida.common.exceptions import InputValidationError
+
 
 
 class RaspaCalculation(JobCalculation):
@@ -35,6 +37,7 @@ class RaspaCalculation(JobCalculation):
         self._OUTPUT_FILE_NAME = 'Output/System_0/*'
         self._DEFAULT_INPUT_FILE = self._INPUT_FILE_NAME
         self._DEFAULT_OUTPUT_FILE = self._OUTPUT_FILE_NAME
+        self._RESTART_FILE_NAME = 'Restart/System_0/restart*'
         self._PROJECT_NAME = 'aiida'
         self._COORDS_FILE_NAME = 'aiida.coords.xyz'
         self._default_parser = 'raspa'
@@ -67,6 +70,13 @@ class RaspaCalculation(JobCalculation):
                'docstring': "Use a node that specifies the "
                             "input parameters for the namelists",
                },
+            "parent_folder": {
+               'valid_types': RemoteData,
+               'additional_parameter': None,
+               'linkname': 'parent_calc_folder',
+               'docstring': "Use a remote folder as parent folder "
+                            "(for restarts and similar)",
+               },
             "file": {
                'valid_types': SinglefileData,
                'additional_parameter': "linkname",
@@ -96,11 +106,22 @@ class RaspaCalculation(JobCalculation):
         in_nodes = self._verify_inlinks(inputdict)
         params, structure, code, settings, local_copy_list = in_nodes
 
+        if 'RestartFile' in params['GeneralSettings']:
+            if  params['GeneralSettings']['RestartFile'] is True:
+                if 'restart_pk' in params:
+                    self._create_restart(params['restart_pk'], tempfolder)
+                else:
+                    raise InputValidationError("You did not specify the parent pk number for restart. Please define restart_pk in the input dictionary")
+        
+    
         # write cp2k input file
         inp = RaspaInput(params)
         inp_fn = tempfolder.get_abs_path(self._INPUT_FILE_NAME)
         with open(inp_fn, "w") as f:
             f.write(inp.render())
+
+
+        
 
         # create code info
         codeinfo = CodeInfo()
@@ -122,7 +143,7 @@ class RaspaCalculation(JobCalculation):
         calcinfo.remote_symlink_list = []
         calcinfo.local_copy_list = local_copy_list
         calcinfo.remote_copy_list = []
-        calcinfo.retrieve_list = [[self._OUTPUT_FILE_NAME,'.',0]]
+        calcinfo.retrieve_list = [[self._OUTPUT_FILE_NAME,'.',0], [self._RESTART_FILE_NAME, '.',0]]
         calcinfo.retrieve_list += settings.pop('additional_retrieve_list', [])
 
 
@@ -134,6 +155,22 @@ class RaspaCalculation(JobCalculation):
             raise InputValidationError(msg)
 
         return calcinfo
+    # --------------------------------------------------------------------------
+    def _create_restart(self, restart_pk, tempfolder):
+        #if self.restart_pk is None:
+            #raise InputValidationError("You did not specify the parent pk number for restart. Current value is{}".format(self.restart_pk))
+        #pn = load_node(self.restart_pk)
+        if restart_pk is not None:
+            pn = load_node(restart_pk)
+        else:
+            raise InputValidationError("Illegal value of the restart_pk:{}. It should be a valid pk of a previous calculation".format(restart_pk))
+        for i in pn.out.retrieved.get_folder_list():
+            if "restart" in i:
+                rest_content = pn.out.retrieved.get_file_content(i)
+                rest_in_fname = i
+        rest_fn = tempfolder.get_subfolder('RestartInitial/System_0', create=True).get_abs_path(rest_in_fname)
+        with open(rest_fn, "w") as f:
+            f.write(rest_content)
 
     # --------------------------------------------------------------------------
     def _verify_inlinks(self, inputdict):
@@ -213,7 +250,7 @@ class RaspaInput(object):
                 output.append('%s%s  %s' % (' '*indent, key, ' '.join(str(p)
                 for p in val)))
             elif isinstance(val, bool):
-                val_str = '.true.' if val else '.false.'
+                val_str = 'yes' if val else 'no'
                 output.append('%s%s  %s' % (' '*indent, key, val_str))
             else:
                 output.append('%s%s  %s' % (' '*indent, key, val))

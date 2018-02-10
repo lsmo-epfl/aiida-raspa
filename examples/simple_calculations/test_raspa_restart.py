@@ -11,6 +11,7 @@
 from __future__ import print_function
 
 import sys
+import os
 
 from aiida import load_dbenv, is_dbenv_loaded
 from aiida.backends import settings
@@ -24,14 +25,17 @@ from aiida.orm.data.singlefile import SinglefileData
 
 
 # ==============================================================================
-if len(sys.argv) != 2:
-    print("Usage: test_raspa.py <code_name>")
+if len(sys.argv) != 3:
+    print("Usage: test_raspa.py <code_name> parent_calc_pk")
     sys.exit(1)
 
 codename = sys.argv[1]
 code = test_and_get_code(codename, expected_code_type='raspa')
 
+parent_calc = int(sys.argv[2])
+
 print("Testing RASPA...")
+
 
 # calc object
 calc = code.new_calc()
@@ -41,41 +45,48 @@ parameters = ParameterData(dict={
     "GeneralSettings":
     {
     "SimulationType"                   : "MonteCarlo",
-    "NumberOfCycles"                   : 2000,
-    "NumberOfInitializationCycles"     : 1000,
-    "RestartFile"                      : False,
+    "NumberOfCycles"                   : 5000,
+    "NumberOfInitializationCycles"     : 2000,
+    "RestartFile"                      : True,
     "PrintEvery"                       : 1000,
-    "Forcefield"                       : "GarciaPerez2006",
-    "ModifyOxgensConnectedToAluminium" : True,
+    "Forcefield"                       : "zeolite",
     "Framework"                        : 0,
-    "FrameworkName"                    : "LTA4A",
-    "RemoveAtomNumberCodeFromLabel"    : True,
-    "UnitCells"                        : [1, 1, 1],
-    "ExternalTemperature"              : 298.0,
-    "ExternalPressure"                 : 10000.0,
+    "FrameworkName"                    : "ACO",
+    "UnitCells"                        : "3 3 3",
+    "HeliumVoidFraction"               : 0.29,
+    "ExternalTemperature"              : 300.0,
+    "ExternalPressure"                 : 1e6,
     },
     "Component":
     [{
-    "MoleculeName"                     : "sodium",
+    "MoleculeName"                     : "methane",
     "MoleculeDefinition"               : "TraPPE",
-    "TranslationProbability"           :  1.0,
-    "RandomTranslationProbability"     :  1.0,
-    "ExtraFrameworkMolecule"           :  True,
-    "CreateNumberOfMolecules"          :  96,
-    },
-    {
-    "MoleculeName"                     : "CO2",
-    "MoleculeDefinition"               : "TraPPE",
-    "BlockPockets"                     : True,
-    "BlockPocketsFilename"             : "LTA",
-    "TranslationProbability"           : 1.0,
-    "ReinsertionProbability"           : 1.0,
+    "TranslationProbability"           : 0.5,
+    "ReinsertionProbability"           : 0.5,
     "SwapProbability"                  : 1.0,
-    "ExtraFrameworkMolecule"           : False,
     "CreateNumberOfMolecules"          : 0,
     }],
+    "restart_pk":parent_calc,
     })
 calc.use_parameters(parameters)
+
+# Additional files
+pwd = os.path.dirname(os.path.realpath(__file__))
+framework = SinglefileData(file=pwd+'/test_raspa_attach_file/ACO.cif')
+calc.use_file(framework, linkname="framework")
+
+molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/methane.def')
+calc.use_file(molecule, linkname="molecule")
+
+molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/force_field_mixing_rules.def')
+calc.use_file(molecule, linkname="mixing_rules")
+
+
+molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/force_field.def')
+calc.use_file(molecule, linkname="force_field")
+
+molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/pseudo_atoms.def')
+calc.use_file(molecule, linkname="pseudo_atoms")
 
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min
