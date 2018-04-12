@@ -8,7 +8,7 @@
     "classifiers": [
         "Programming Language :: Python"
     ],
-    "version": "0.1.0",
+    "version": "0.1.1",
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
