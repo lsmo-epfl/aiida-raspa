@@ -19,7 +19,7 @@ if not is_dbenv_loaded():
     load_dbenv(profile=settings.AIIDADB_PROFILE)
 
 from aiida.common.example_helpers import test_and_get_code  
-from aiida.orm.data.structure import StructureData  
+from aiida.orm.data.cif import CifData 
 from aiida.orm.data.parameter import ParameterData 
 from aiida.orm.data.singlefile import SinglefileData
 
@@ -67,8 +67,8 @@ calc.use_parameters(parameters)
 
 # Additional files
 pwd = os.path.dirname(os.path.realpath(__file__))
-framework = SinglefileData(file=pwd+'/test_raspa_attach_file/ACO.cif')
-calc.use_file(framework, linkname="framework")
+framework = CifData(file=pwd+'/test_raspa_attach_file/ACO.cif')
+calc.use_structure(framework)
 
 molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/methane.def')
 calc.use_file(molecule, linkname="molecule")
@@ -86,6 +86,7 @@ calc.use_file(molecule, linkname="pseudo_atoms")
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min
 calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
+#calc.set_queue_name("serial")
 
 # store and submit
 calc.store_all()

@@ -80,7 +80,7 @@ calc.use_parameters(parameters)
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min
 calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
-
+#calc.set_queue_name("serial")
 # store and submit
 calc.store_all()
 calc.submit()

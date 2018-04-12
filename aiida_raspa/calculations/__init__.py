@@ -11,12 +11,13 @@
 from aiida.orm import load_node
 from aiida.orm.calculation.job import JobCalculation
 from aiida.common.utils import classproperty
-from aiida.orm.data.structure import StructureData
+from aiida.orm.data.cif import CifData
 from aiida.orm.data.parameter import ParameterData
 from aiida.orm.data.singlefile import SinglefileData
 from aiida.orm.data.remote import RemoteData
 from aiida.common.datastructures import CalcInfo, CodeInfo
 from aiida.common.exceptions import InputValidationError
+from shutil import copyfile
 
 
 
@@ -52,7 +53,7 @@ class RaspaCalculation(JobCalculation):
         retdict = JobCalculation._use_methods
         retdict.update({
             "structure": {
-               'valid_types': StructureData,
+               'valid_types': CifData,
                'additional_parameter': None,
                'linkname': 'structure',
                'docstring': "Choose the input structure to use",
@@ -114,13 +115,17 @@ class RaspaCalculation(JobCalculation):
                     raise InputValidationError("You did not specify the parent pk number for restart. Please define restart_pk in the input dictionary")
         
     
-        # write cp2k input file
+        # write raspa input file
         inp = RaspaInput(params)
         inp_fn = tempfolder.get_abs_path(self._INPUT_FILE_NAME)
         with open(inp_fn, "w") as f:
             f.write(inp.render())
 
 
+        # create structure file
+        if structure is not None:
+            dest = tempfolder.get_abs_path(structure.filename)
+            copyfile(structure.get_file_abs_path(), dest)
         
 
         # create code info
@@ -185,8 +190,8 @@ class RaspaCalculation(JobCalculation):
         # structure
         structure = inputdict.pop('structure', None)
         if structure is not None:
-            if not isinstance(structure, StructureData):
-                raise InputValidationError("structure type not StructureData")
+            if not isinstance(structure, CifData):
+                raise InputValidationError("structure type not CifData")
 
         # code
         code = inputdict.pop(self.get_linkname('code'), None)
