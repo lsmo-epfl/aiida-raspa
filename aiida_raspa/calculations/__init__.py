@@ -110,7 +110,7 @@ class RaspaCalculation(JobCalculation):
         if 'RestartFile' in params['GeneralSettings']:
             if  params['GeneralSettings']['RestartFile'] is True:
                 if 'restart_pk' in params:
-                    self._create_restart(params['restart_pk'], tempfolder)
+                    self._create_restart(params, tempfolder)
                 else:
                     raise InputValidationError("You did not specify the parent pk number for restart. Please define restart_pk in the input dictionary")
         
@@ -165,18 +165,21 @@ class RaspaCalculation(JobCalculation):
 
         return calcinfo
     # --------------------------------------------------------------------------
-    def _create_restart(self, restart_pk, tempfolder):
+    def _create_restart(self, params, tempfolder):
         #if self.restart_pk is None:
             #raise InputValidationError("You did not specify the parent pk number for restart. Current value is{}".format(self.restart_pk))
         #pn = load_node(self.restart_pk)
-        if restart_pk is not None:
-            pn = load_node(restart_pk)
+        if params['restart_pk'] is not None:
+            pn = load_node(params['restart_pk'])
         else:
-            raise InputValidationError("Illegal value of the restart_pk:{}. It should be a valid pk of a previous calculation".format(restart_pk))
+            raise InputValidationError("Illegal value of the restart_pk:{}. It should be a valid pk of a previous calculation".format(params['restart_pk']))
         for i in pn.out.retrieved.get_folder_list():
             if "restart" in i:
                 rest_content = pn.out.retrieved.get_file_content(i)
-                rest_in_fname = i
+#                rest_in_fname = i
+        genset = params['GeneralSettings']
+        (nx, ny, nz) = tuple(map(int, genset['UnitCells'].split()))
+        rest_in_fname = "restart_%s_%d.%d.%d_%lf_%lg" % ("framework", nx, ny, nz, genset['ExternalTemperature'], genset['ExternalPressure'])
         rest_fn = tempfolder.get_subfolder('RestartInitial/System_0', create=True).get_abs_path(rest_in_fname)
         with open(rest_fn, "w") as f:
             f.write(rest_content)

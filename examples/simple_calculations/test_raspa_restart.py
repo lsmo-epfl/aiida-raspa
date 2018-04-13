@@ -19,7 +19,7 @@ if not is_dbenv_loaded():
     load_dbenv(profile=settings.AIIDADB_PROFILE)
 
 from aiida.common.example_helpers import test_and_get_code  
-from aiida.orm.data.structure import StructureData  
+from aiida.orm.data.cif import CifData 
 from aiida.orm.data.parameter import ParameterData 
 from aiida.orm.data.singlefile import SinglefileData
 
@@ -36,7 +36,6 @@ parent_calc = int(sys.argv[2])
 
 print("Testing RASPA...")
 
-
 # calc object
 calc = code.new_calc()
 
@@ -49,9 +48,8 @@ parameters = ParameterData(dict={
     "NumberOfInitializationCycles"     : 2000,
     "RestartFile"                      : True,
     "PrintEvery"                       : 1000,
-    "Forcefield"                       : "zeolite",
+    "Forcefield"                       : "GenericZeolites",
     "Framework"                        : 0,
-    "FrameworkName"                    : "ACO",
     "UnitCells"                        : "3 3 3",
     "HeliumVoidFraction"               : 0.29,
     "ExternalTemperature"              : 300.0,
@@ -72,21 +70,21 @@ calc.use_parameters(parameters)
 
 # Additional files
 pwd = os.path.dirname(os.path.realpath(__file__))
-framework = SinglefileData(file=pwd+'/test_raspa_attach_file/ACO.cif')
-calc.use_file(framework, linkname="framework")
+framework = CifData(file=pwd+'/test_raspa_attach_file/ACO.cif')
+calc.use_structure(framework)
 
-molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/methane.def')
-calc.use_file(molecule, linkname="molecule")
+#molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/methane.def')
+#calc.use_file(molecule, linkname="molecule")
 
-molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/force_field_mixing_rules.def')
-calc.use_file(molecule, linkname="mixing_rules")
+#molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/force_field_mixing_rules.def')
+#calc.use_file(molecule, linkname="mixing_rules")
 
 
-molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/force_field.def')
-calc.use_file(molecule, linkname="force_field")
+#molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/force_field.def')
+#calc.use_file(molecule, linkname="force_field")
 
-molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/pseudo_atoms.def')
-calc.use_file(molecule, linkname="pseudo_atoms")
+#molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/pseudo_atoms.def')
+#calc.use_file(molecule, linkname="pseudo_atoms")
 
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min
