@@ -45,9 +45,8 @@ parameters = ParameterData(dict={
     "NumberOfCycles"                   : 5000,
     "NumberOfInitializationCycles"     : 2000,
     "PrintEvery"                       : 1000,
-    "Forcefield"                       : "zeolite",
+    "Forcefield"                       : "GenericZeolites",
     "Framework"                        : 0,
-    "FrameworkName"                    : "ACO",
     "UnitCells"                        : "3 3 3",
     "HeliumVoidFraction"               : 0.29,
     "ExternalTemperature"              : 300.0,
@@ -70,23 +69,23 @@ pwd = os.path.dirname(os.path.realpath(__file__))
 framework = CifData(file=pwd+'/test_raspa_attach_file/ACO.cif')
 calc.use_structure(framework)
 
-molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/methane.def')
-calc.use_file(molecule, linkname="molecule")
+#molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/methane.def')
+#calc.use_file(molecule, linkname="molecule")
 
-molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/force_field_mixing_rules.def')
-calc.use_file(molecule, linkname="mixing_rules")
+#molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/force_field_mixing_rules.def')
+#calc.use_file(molecule, linkname="mixing_rules")
 
 
-molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/force_field.def')
-calc.use_file(molecule, linkname="force_field")
+#molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/force_field.def')
+#calc.use_file(molecule, linkname="force_field")
 
-molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/pseudo_atoms.def')
-calc.use_file(molecule, linkname="pseudo_atoms")
+#molecule = SinglefileData (file=pwd+'/test_raspa_attach_file/pseudo_atoms.def')
+#calc.use_file(molecule, linkname="pseudo_atoms")
 
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min
 calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
-#calc.set_queue_name("serial")
+calc.set_queue_name("serial")
 
 # store and submit
 calc.store_all()
