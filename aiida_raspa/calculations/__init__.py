@@ -40,7 +40,7 @@ class RaspaCalculation(JobCalculation):
         self._DEFAULT_OUTPUT_FILE = self._OUTPUT_FILE_NAME
         self._RESTART_FILE_NAME = 'Restart/System_0/restart*'
         self._PROJECT_NAME = 'aiida'
-        self._COORDS_FILE_NAME = 'aiida.coords.xyz'
+        self._COORDS_FILE_NAME = 'framework.cif'
         self._default_parser = 'raspa'
 
     # --------------------------------------------------------------------------
@@ -116,6 +116,10 @@ class RaspaCalculation(JobCalculation):
         
     
         # write raspa input file
+        if 'FrameworkName' in params['GeneralSettings']:
+            raise InputValidationError("You should not provide \"FrameworkName\" as an input parameter. It will be generated automatically")
+        else:
+            params['GeneralSettings']['FrameworkName'] = 'framework'
         inp = RaspaInput(params)
         inp_fn = tempfolder.get_abs_path(self._INPUT_FILE_NAME)
         with open(inp_fn, "w") as f:
@@ -125,7 +129,7 @@ class RaspaCalculation(JobCalculation):
         # create structure file
         if structure is not None:
             dest = tempfolder.get_abs_path(structure.filename)
-            copyfile(structure.get_file_abs_path(), dest)
+            copyfile(structure.get_file_abs_path(), tempfolder.get_abs_path(self._COORDS_FILE_NAME))
         
 
         # create code info
