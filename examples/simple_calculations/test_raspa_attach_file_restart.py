@@ -47,8 +47,9 @@ parameters = ParameterData(dict={
     "NumberOfCycles"                   : 5000,
     "NumberOfInitializationCycles"     : 2000,
     "RestartFile"                      : True,
+    "RestartFilePk"                    : parent_calc,
     "PrintEvery"                       : 1000,
-    "Forcefield"                       : "GenericZeolites",
+    "Forcefield"                       : "GenericMOFs",
     "Framework"                        : 0,
     "UnitCells"                        : "3 3 3",
     "HeliumVoidFraction"               : 0.29,
@@ -64,7 +65,6 @@ parameters = ParameterData(dict={
     "SwapProbability"                  : 1.0,
     "CreateNumberOfMolecules"          : 0,
     }],
-    "restart_pk":parent_calc,
     })
 calc.use_parameters(parameters)
 
@@ -76,6 +76,7 @@ calc.use_structure(framework)
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min
 calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
+#calc.set_queue_name("serial")
 
 # store and submit
 calc.store_all()

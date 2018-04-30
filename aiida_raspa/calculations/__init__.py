@@ -109,12 +109,12 @@ class RaspaCalculation(JobCalculation):
 
         if 'RestartFile' in params['GeneralSettings']:
             if  params['GeneralSettings']['RestartFile'] is True:
-                if 'restart_pk' in params:
+                if 'RestartFilePk' in params['GeneralSettings']:
                     self._create_restart(params, tempfolder)
                 else:
                     raise InputValidationError("You did not specify the"
                         " parent pk number for restart. Please define"
-                        " restart_pk in the input dictionary")
+                        " RestartFilePk in GeneralSettings section")
  
         for i, component in enumerate (params['Component']):
             if 'BlockPockets' in component:
@@ -180,13 +180,13 @@ class RaspaCalculation(JobCalculation):
         return calcinfo
     # --------------------------------------------------------------------------
     def _create_restart(self, params, tempfolder):
-        #if self.restart_pk is None:
-            #raise InputValidationError("You did not specify the parent pk number for restart. Current value is{}".format(self.restart_pk))
-        #pn = load_node(self.restart_pk)
-        if params['restart_pk'] is not None:
-            pn = load_node(params['restart_pk'])
+        pk = params['GeneralSettings'].pop('RestartFilePk')
+        if pk is not None:
+            pn = load_node(pk)
         else:
-            raise InputValidationError("Illegal value of the restart_pk:{}. It should be a valid pk of a previous calculation".format(params['restart_pk']))
+            raise InputValidationError("Illegal value of the RestartFilePk:"
+            " {}. It should be a valid pk of a previous raspa"
+            " calculation".format(pk))
         for i in pn.out.retrieved.get_folder_list():
             if "restart" in i:
                 content = pn.out.retrieved.get_file_content(i)

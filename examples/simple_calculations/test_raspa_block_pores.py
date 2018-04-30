@@ -47,7 +47,7 @@ parameters = ParameterData(dict={
     "NumberOfCycles"                   : 5000,
     "NumberOfInitializationCycles"     : 2000,
     "PrintEvery"                       : 1000,
-    "Forcefield"                       : "GenericZeolites",
+    "Forcefield"                       : "GenericMOFs",
     "Framework"                        : 0,
     "UnitCells"                        : "1 1 1",
     "HeliumVoidFraction"               : 0.29,
