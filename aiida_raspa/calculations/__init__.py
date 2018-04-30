@@ -112,12 +112,26 @@ class RaspaCalculation(JobCalculation):
                 if 'restart_pk' in params:
                     self._create_restart(params, tempfolder)
                 else:
-                    raise InputValidationError("You did not specify the parent pk number for restart. Please define restart_pk in the input dictionary")
-        
+                    raise InputValidationError("You did not specify the"
+                        " parent pk number for restart. Please define"
+                        " restart_pk in the input dictionary")
+ 
+        for i, component in enumerate (params['Component']):
+            if 'BlockPockets' in component:
+                if  component['BlockPockets'] is True:
+                    if 'BlockPocketsPk' in component:
+                        self._create_block(params, tempfolder, i)
+                    else:
+                        raise InputValidationError("You did not specify"
+                            " the parent pk number for block calculation."
+                            " Please define BlockPocketsPk in the input"
+                            " Component {} section".format(i))
     
         # write raspa input file
         if 'FrameworkName' in params['GeneralSettings']:
-            raise InputValidationError("You should not provide \"FrameworkName\" as an input parameter. It will be generated automatically")
+            raise InputValidationError('You should not provide "FrameworkName"'
+                ' as an input parameter. It will be generated automatically'
+                ' by AiiDA')
         else:
             params['GeneralSettings']['FrameworkName'] = 'framework'
         inp = RaspaInput(params)
@@ -175,14 +189,29 @@ class RaspaCalculation(JobCalculation):
             raise InputValidationError("Illegal value of the restart_pk:{}. It should be a valid pk of a previous calculation".format(params['restart_pk']))
         for i in pn.out.retrieved.get_folder_list():
             if "restart" in i:
-                rest_content = pn.out.retrieved.get_file_content(i)
+                content = pn.out.retrieved.get_file_content(i)
 #                rest_in_fname = i
         genset = params['GeneralSettings']
         (nx, ny, nz) = tuple(map(int, genset['UnitCells'].split()))
         rest_in_fname = "restart_%s_%d.%d.%d_%lf_%lg" % ("framework", nx, ny, nz, genset['ExternalTemperature'], genset['ExternalPressure'])
-        rest_fn = tempfolder.get_subfolder('RestartInitial/System_0', create=True).get_abs_path(rest_in_fname)
-        with open(rest_fn, "w") as f:
-            f.write(rest_content)
+        fn = tempfolder.get_subfolder('RestartInitial/System_0', create=True).get_abs_path(rest_in_fname)
+        with open(fn, "w") as f:
+            f.write(content)
+            
+    # --------------------------------------------------------------------------
+    def _create_block(self, params, tempfolder, component):
+        pk = params['Component'][component].pop('BlockPocketsPk')
+        if pk is not None:
+            pn = load_node(pk)
+            params['Component'][component]['BlockPocketsFileName'] = 'component_{}'.format(component)
+        else:
+            raise InputValidationError("Illegal value of the Component {} BlockPocketsPk. It should be a valid pk of a previous zeo++ block calculation".format(load_node(params['Component'][component]['BlockPocketsPk'])))
+        for i in pn.out.retrieved.get_folder_list():
+            if "out.block" in i:
+                content = pn.out.retrieved.get_file_content(i)
+        fn = tempfolder.get_subfolder().get_abs_path('component_{}.block'.format(component))
+        with open(fn, "w") as f:
+            f.write(content)
 
     # --------------------------------------------------------------------------
     def _verify_inlinks(self, inputdict):

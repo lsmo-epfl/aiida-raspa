@@ -26,13 +26,13 @@ from aiida.orm.data.singlefile import SinglefileData
 
 # ==============================================================================
 if len(sys.argv) != 3:
-    print("Usage: test_raspa.py <code_name> parent_calc_pk")
+    print("Usage: test_raspa.py <code_name> zeo++_block_pk")
     sys.exit(1)
 
 codename = sys.argv[1]
 code = test_and_get_code(codename, expected_code_type='raspa')
 
-parent_calc = int(sys.argv[2])
+zeopp_pk = int(sys.argv[2])
 
 print("Testing RASPA...")
 
@@ -46,11 +46,10 @@ parameters = ParameterData(dict={
     "SimulationType"                   : "MonteCarlo",
     "NumberOfCycles"                   : 5000,
     "NumberOfInitializationCycles"     : 2000,
-    "RestartFile"                      : True,
     "PrintEvery"                       : 1000,
     "Forcefield"                       : "GenericZeolites",
     "Framework"                        : 0,
-    "UnitCells"                        : "3 3 3",
+    "UnitCells"                        : "1 1 1",
     "HeliumVoidFraction"               : 0.29,
     "ExternalTemperature"              : 300.0,
     "ExternalPressure"                 : 1e6,
@@ -63,14 +62,15 @@ parameters = ParameterData(dict={
     "ReinsertionProbability"           : 0.5,
     "SwapProbability"                  : 1.0,
     "CreateNumberOfMolecules"          : 0,
+    "BlockPockets"                     : True,
+    "BlockPocketsPk"                   : zeopp_pk,
     }],
-    "restart_pk":parent_calc,
     })
 calc.use_parameters(parameters)
 
 # Additional files
 pwd = os.path.dirname(os.path.realpath(__file__))
-framework = CifData(file=pwd+'/test_raspa_attach_file/ACO.cif')
+framework = CifData(file=pwd+'/test_raspa_attach_file/TCC1RS.cif')
 calc.use_structure(framework)
 
 # resources
@@ -80,8 +80,8 @@ calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
 # store and submit
 calc.store_all()
 calc.submit()
-
 #calc.submit_test()
+
 print("submitted calculation: PK=%s" % calc.pk)
 
 # EOF

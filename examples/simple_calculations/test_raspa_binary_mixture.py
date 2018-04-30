@@ -25,14 +25,12 @@ from aiida.orm.data.singlefile import SinglefileData
 
 
 # ==============================================================================
-if len(sys.argv) != 3:
-    print("Usage: test_raspa.py <code_name> parent_calc_pk")
+if len(sys.argv) != 2:
+    print("Usage: test_raspa.py <code_name>")
     sys.exit(1)
 
 codename = sys.argv[1]
 code = test_and_get_code(codename, expected_code_type='raspa')
-
-parent_calc = int(sys.argv[2])
 
 print("Testing RASPA...")
 
@@ -44,38 +42,41 @@ parameters = ParameterData(dict={
     "GeneralSettings":
     {
     "SimulationType"                   : "MonteCarlo",
-    "NumberOfCycles"                   : 5000,
+    "NumberOfCycles"                   : 4000,
     "NumberOfInitializationCycles"     : 2000,
-    "RestartFile"                      : True,
     "PrintEvery"                       : 1000,
-    "Forcefield"                       : "GenericZeolites",
-    "Framework"                        : 0,
-    "UnitCells"                        : "3 3 3",
-    "HeliumVoidFraction"               : 0.29,
+    "Forcefield"                       : "GarciaPerez2006",
+
+    "Box"                              : 0,
+    "BoxLengths"                       : "25 25 25",
     "ExternalTemperature"              : 300.0,
-    "ExternalPressure"                 : 1e6,
     },
     "Component":
     [{
-    "MoleculeName"                     : "methane",
+    "MoleculeName"                     : "propane",
     "MoleculeDefinition"               : "TraPPE",
-    "TranslationProbability"           : 0.5,
-    "ReinsertionProbability"           : 0.5,
+    "TranslationProbability"           : 1.0,
+    "ReinsertionProbability"           : 1.0,
     "SwapProbability"                  : 1.0,
-    "CreateNumberOfMolecules"          : 0,
-    }],
-    "restart_pk":parent_calc,
+    "CreateNumberOfMolecules"          : 30,
+    },
+    {
+    "MoleculeName"                     : "butane",
+    "MoleculeDefinition"               : "TraPPE",
+    "TranslationProbability"           : 1.0,
+    "ReinsertionProbability"           : 1.0,
+    "SwapProbability"                  : 1.0,
+    "CreateNumberOfMolecules"          : 30,
+    },
+    ],  
     })
 calc.use_parameters(parameters)
 
-# Additional files
-pwd = os.path.dirname(os.path.realpath(__file__))
-framework = CifData(file=pwd+'/test_raspa_attach_file/ACO.cif')
-calc.use_structure(framework)
 
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min
 calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
+#calc.set_queue_name("serial")
 
 # store and submit
 calc.store_all()
