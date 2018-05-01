@@ -42,7 +42,7 @@ parameters = ParameterData(dict={
     "GeneralSettings":
     {
     "SimulationType"                   : "MonteCarlo",
-    "NumberOfCycles"                   : 5000,
+    "NumberOfCycles"                   : 2000,
     "NumberOfInitializationCycles"     : 2000,
     "PrintEvery"                       : 1000,
     "Forcefield"                       : "GenericMOFs",
