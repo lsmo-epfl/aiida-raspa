@@ -209,7 +209,7 @@ class RaspaCalculation(JobCalculation):
         for i in pn.out.retrieved.get_folder_list():
             if "out.block" in i:
                 content = pn.out.retrieved.get_file_content(i)
-        fn = tempfolder.get_subfolder().get_abs_path('component_{}.block'.format(component))
+        fn = tempfolder.get_subfolder(".").get_abs_path('component_{}.block'.format(component))
         with open(fn, "w") as f:
             f.write(content)
 
