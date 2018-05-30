@@ -45,11 +45,13 @@ parameters = ParameterData(dict={
     "NumberOfCycles"                   : 2000,
     "NumberOfInitializationCycles"     : 2000,
     "PrintEvery"                       : 1000,
-    "Forcefield"                       : "GarciaPerez2006",
-
+    "Forcefield"                       : "GenericMOFs",
+    "EwaldPrecision"                   : 1e-6,
+    "CutOff"                           : 12.0,
     "Box"                              : 0,
     "BoxLengths"                       : "25 25 25",
     "ExternalTemperature"              : 300.0,
+    "ExternalPressure"                 : 5e5,
     },
     "Component":
     [{
@@ -67,15 +69,15 @@ parameters = ParameterData(dict={
     "ReinsertionProbability"           : 1.0,
     "SwapProbability"                  : 1.0,
     "CreateNumberOfMolecules"          : 30,
-    },
-    ],  
-    })
+    }],  
+})
 calc.use_parameters(parameters)
 
 
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min
 calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
+calc.set_withmpi(False)
 #calc.set_queue_name("serial")
 
 # store and submit

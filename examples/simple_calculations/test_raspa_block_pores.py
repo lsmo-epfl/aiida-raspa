@@ -44,15 +44,17 @@ parameters = ParameterData(dict={
     "GeneralSettings":
     {
     "SimulationType"                   : "MonteCarlo",
-    "NumberOfCycles"                   : 5000,
+    "NumberOfCycles"                   : 2000,
     "NumberOfInitializationCycles"     : 2000,
     "PrintEvery"                       : 1000,
     "Forcefield"                       : "GenericMOFs",
+    "EwaldPrecision"                   : 1e-6,
+    "CutOff"                           : 12.0,
     "Framework"                        : 0,
     "UnitCells"                        : "1 1 1",
-    "HeliumVoidFraction"               : 0.29,
+    "HeliumVoidFraction"               : 0.149,
     "ExternalTemperature"              : 300.0,
-    "ExternalPressure"                 : 1e6,
+    "ExternalPressure"                 : 5e5,
     },
     "Component":
     [{
@@ -65,7 +67,7 @@ parameters = ParameterData(dict={
     "BlockPockets"                     : True,
     "BlockPocketsPk"                   : zeopp_pk,
     }],
-    })
+})
 calc.use_parameters(parameters)
 
 # Additional files
@@ -76,12 +78,14 @@ calc.use_structure(framework)
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min
 calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
+calc.set_withmpi(False)
+#calc.set_queue_name("serial")
 
 # store and submit
 calc.store_all()
 calc.submit()
-#calc.submit_test()
 
+#calc.submit_test()
 print("submitted calculation: PK=%s" % calc.pk)
 
 # EOF

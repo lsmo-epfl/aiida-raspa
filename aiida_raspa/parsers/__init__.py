@@ -82,7 +82,8 @@ class RaspaParser(Parser):
         res_per_component = []
         component_names = []
         inp_params = self._calc.inp.parameters.get_dict()
-        for i in range(len(inp_params['Component'])):
+        ncomponents = len(inp_params['Component'])
+        for i in range(ncomponents):
             res_per_component.append({})
             component_names.append(inp_params['Component'][i]['MoleculeName'])
         # self.logger.info("list of components: {}".format(component_names))
@@ -150,14 +151,22 @@ class RaspaParser(Parser):
 #                    result_dict['nwarnings'] = int(line.split()[-2])
             i = 0
             for line in f:
-                if 'Average loading excess [molecules/unit cell]' in line:
+                if 'Average loading absolute [molecules/unit cell]' in line:
                     res_per_component[i]['loading_absolute_average'] = \
                             float(line.split()[5])
                     res_per_component[i]['loading_absolute_dev'] = \
                             float(line.split()[7])
                     res_per_component[i]['loading_absolute_units'] = \
                             'molecules/unit cell'
+                if 'Average loading excess [molecules/unit cell]' in line:
+                    res_per_component[i]['loading_excess_average'] = \
+                            float(line.split()[5])
+                    res_per_component[i]['loading_excess_dev'] = \
+                            float(line.split()[7])
+                    res_per_component[i]['loading_excess_units'] = \
+                            'molecules/unit cell'
                     i += 1
+                if i >= ncomponents:
                     break
 #                if 'exceeded requested execution time' in line:
 #                    result_dict['exceeded_walltime'] = True

@@ -44,17 +44,19 @@ parameters = ParameterData(dict={
     "GeneralSettings":
     {
     "SimulationType"                   : "MonteCarlo",
-    "NumberOfCycles"                   : 5000,
+    "NumberOfCycles"                   : 2000,
     "NumberOfInitializationCycles"     : 2000,
     "RestartFile"                      : True,
     "RestartFilePk"                    : parent_calc,
     "PrintEvery"                       : 1000,
     "Forcefield"                       : "GenericMOFs",
+    "EwaldPrecision"                   : 1e-6,
+    "CutOff"                           : 12.0,
     "Framework"                        : 0,
-    "UnitCells"                        : "3 3 3",
-    "HeliumVoidFraction"               : 0.29,
+    "UnitCells"                        : "1 1 1",
+    "HeliumVoidFraction"               : 0.149,
     "ExternalTemperature"              : 300.0,
-    "ExternalPressure"                 : 1e6,
+    "ExternalPressure"                 : 5e5,
     },
     "Component":
     [{
@@ -65,17 +67,18 @@ parameters = ParameterData(dict={
     "SwapProbability"                  : 1.0,
     "CreateNumberOfMolecules"          : 0,
     }],
-    })
+})
 calc.use_parameters(parameters)
 
 # Additional files
 pwd = os.path.dirname(os.path.realpath(__file__))
-framework = CifData(file=pwd+'/test_raspa_attach_file/ACO.cif')
+framework = CifData(file=pwd+'/test_raspa_attach_file/TCC1RS.cif')
 calc.use_structure(framework)
 
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min
 calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
+calc.set_withmpi(False)
 #calc.set_queue_name("serial")
 
 # store and submit
