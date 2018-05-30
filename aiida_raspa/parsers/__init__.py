@@ -8,7 +8,7 @@
 # For further information please visit http://www.aiida.net                  #
 ##############################################################################
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 import re
 from aiida.parsers.parser import Parser
