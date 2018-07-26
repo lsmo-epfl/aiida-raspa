@@ -16,14 +16,16 @@ from aiida.orm.data.parameter import ParameterData
 from aiida_raspa.calculations import RaspaCalculation
 from aiida.parsers.exceptions import OutputParsingError
 
+KELVIN_TO_KJ_PER_MOL=float(8.314464919/1000.0) #exactly the same as Raspa
 
-def block_analysis(fl, value=1, units=2, dev=4):
+
+'''
+def block_analysis(fl, value=1, units=2, dev=4):                    #domod: not useful
     for line in fl:
         if 'Average' in line:
             break
     return (float(line.split()[value]), line.split()[units][1:-1],
             float(line.split()[dev]))
-
 
 def extract_component_quantity(res_components, components, line, prop):
     # self.logger.info("analysing line: {}".format(line))
@@ -38,6 +40,7 @@ def extract_component_quantity(res_components, components, line, prop):
                              " components: {} in line {}. Last component"
                              " checked was: {}".format(prop, components,
                                                        line, c))
+'''
 
 
 class RaspaParser(Parser):
@@ -88,98 +91,121 @@ class RaspaParser(Parser):
             component_names.append(inp_params['Component'][i]['MoleculeName'])
         # self.logger.info("list of components: {}".format(component_names))
 
-        result_dict = {'exceeded_walltime': False}
         abs_fn = out_folder.get_abs_path(fn)
-        av_volume = re.compile("Average Volume:")
-        av_pressure = re.compile("Average Pressure:")
-        av_temperature = re.compile("Average temperature:")
-        av_density = re.compile("Average Density:")
-        av_heat_of_desorpt = re.compile("Heat of desorption:")
-        av_tot_energy = re.compile("Total energy:$")
-        num_of_molec = re.compile("Number of molecules:$")
 
-        av_chem_pot_component = re.compile(" Average chemical potential: ")
-        av_henry_coeff_component = re.compile(" Average Henry coefficient: ")
-
-        result_dict = {'exceeded_walltime': False}
         with open(abs_fn, "r") as f:
-            for line in f:
+            # Parse the "Adsorbate properties" section
+            if ncomponents>0:
+                icomponent = 0
+                for line in f:
+                    if "MolFraction:" in line:
+                        res_per_component[icomponent]['mol_fraction'] = float(line.split()[1])
+                        res_per_component[icomponent]['mol_fraction_unit'] = "-"
+                    if "Conversion factor molecules/unit cell -> mol/kg:" in line:
+                        res_per_component[icomponent]['conversion_factor_molec_uc_to_mol_kg'] = float(line.split()[6])
+                        res_per_component[icomponent]['conversion_factor_molec_uc_to_mol_kg_unit'] = "(mol/kg)/(molec/uc)"
+                    if "Conversion factor molecules/unit cell -> gr/gr:" in line:
+                        res_per_component[icomponent]['conversion_factor_molec_uc_to_gr_gr'] = float(line.split()[6])
+                        res_per_component[icomponent]['conversion_factor_molec_uc_to_gr_gr_unit'] = "(gr/gr)/(molec/uc)"
+                    if "Conversion factor molecules/unit cell -> cm^3 STP/gr:" in line:
+                        res_per_component[icomponent]['conversion_factor_molec_uc_to_cm3stp_gr'] = float(line.split()[7])
+                        res_per_component[icomponent]['conversion_factor_molec_uc_to_cm3stp_gr_unit'] = "(cm^3_STP/gr)/(molec/uc)"
+                    if "Conversion factor molecules/unit cell -> cm^3 STP/cm^3:" in line:
+                        res_per_component[icomponent]['conversion_factor_molec_uc_to_cm3stp_cm3'] = float(line.split()[7])
+                        res_per_component[icomponent]['conversion_factor_molec_uc_to_cm3stp_cm3_unit'] = "(cm^3_STP/cm^3)/(molec/uc)"
+                    if "Partial pressure:" in line:
+                        res_per_component[icomponent]['partial_pressure'] = float(line.split()[2])
+                        res_per_component[icomponent]['partial_pressure_unit'] = "Pa"
+                    if "Partial fugacity:" in line:
+                        res_per_component[icomponent]['partial_fugacity'] = float(line.split()[2])
+                        res_per_component[icomponent]['partial_fugacity_unit'] = "Pa"
+                        icomponent += 1
+                    if icomponent == ncomponents:
+                        break
+
+            # Jump to the "Results" section (if not present: exceeded_walltime=True)   
+            result_dict = {'exceeded_walltime': True}
+            for line in f: 
                 if 'Finishing simulation' in line:
-                    break
+                    result_dict['exceeded_walltime'] = False 
+                    break    
+
+            # Parse the "System results" section                        
             for line in f:
-                if av_volume.match(line) is not None:
-                    (result_dict['cell_volume_average'],
-                    result_dict['cell_volume_units'],
-                    result_dict['cell_volume_dev']) = block_analysis(f)
-                    continue
-
-                if av_pressure.match(line) is not None:
-                    (result_dict['pressure_average'],
-                    result_dict['pressure_units'],
-                    result_dict['pressure_dev']) = block_analysis(f)
-                    continue
-
-                if av_temperature.match(line) is not None:
-                    (result_dict['temperature_average'],
-                    result_dict['temperature_units'],
-                    result_dict['temperature_dev']) = block_analysis(f)
-                    continue
-
-                if av_density.match(line) is not None:
-                    (result_dict['density_average'],
-                    result_dict['density_units'],
-                    result_dict['density_dev']) = block_analysis(f)
-                    continue
-
-                if av_heat_of_desorpt.match(line) is not None:
-                    (result_dict['heat_of_desorption_average'],
-                    result_dict['heat_of_desorption_units'],
-                    result_dict['heat_of_desorption_dev']) = \
-                    block_analysis(f, units=4, dev=3)
-                    continue
-
-                if av_tot_energy.match(line) is not None:
-                    (result_dict['total_energy_average'],
-                    result_dict['total_energy_units'],
-                    result_dict['total_energy_dev']) = \
-                    block_analysis(f)
-                    continue
-
-                if num_of_molec.match(line) is not None:
+                if 'Enthalpy of adsorption:' in line: 
+                    for line in f: 
+                        if 'Average' in line:
+                            result_dict['enthalpy_of_adsorption_units']   = 'KJ/MOL'
+                            result_dict['enthalpy_of_adsorption_average'] = float(line.split()[1])*KELVIN_TO_KJ_PER_MOL
+                            result_dict['enthalpy_of_adsorption_dev']     = float(line.split()[3])*KELVIN_TO_KJ_PER_MOL
+                            break
+                break
+            for line in f: 
+                if 'Average Adsorbate-Adsorbate energy:' in line:
+                    for line in f: 
+                        if 'Average' in line:
+                            result_dict['ads_ads_total_energy_unit']   = 'KJ/MOL'
+                            result_dict['ads_ads_wdv_energy_unit']     = 'KJ/MOL'
+                            result_dict['ads_ads_coulomb_energy_unit'] = 'KJ/MOL'
+                            result_dict['ads_ads_total_energy_average']   = float(line.split()[1])*KELVIN_TO_KJ_PER_MOL
+                            result_dict['ads_ads_wdv_energy_average']     = float(line.split()[5])*KELVIN_TO_KJ_PER_MOL
+                            result_dict['ads_ads_coulomb_energy_average'] = float(line.split()[7])*KELVIN_TO_KJ_PER_MOL
+                        if '+/-' in line:
+                            result_dict['ads_ads_total_energy_dev']   = float(line.split()[1])*KELVIN_TO_KJ_PER_MOL
+                            result_dict['ads_ads_wdv_energy_dev']     = float(line.split()[3])*KELVIN_TO_KJ_PER_MOL
+                            result_dict['ads_ads_coulomb_energy_dev'] = float(line.split()[5])*KELVIN_TO_KJ_PER_MOL    
+                            break
+                    break 
+            for line in f: 
+                if 'Average Host-Adsorbate energy:' in line:
+                    for line in f: 
+                        if 'Average' in line:
+                            result_dict['host_ads_total_energy_unit']   = 'KJ/MOL'
+                            result_dict['host_ads_wdv_energy_unit']     = 'KJ/MOL'
+                            result_dict['host_ads_coulomb_energy_unit'] = 'KJ/MOL'
+                            result_dict['host_ads_total_energy_average']   = float(line.split()[1])*KELVIN_TO_KJ_PER_MOL
+                            result_dict['host_ads_wdv_energy_average']     = float(line.split()[5])*KELVIN_TO_KJ_PER_MOL
+                            result_dict['host_ads_coulomb_energy_average'] = float(line.split()[7])*KELVIN_TO_KJ_PER_MOL
+                        if '+/-' in line:
+                            result_dict['host_ads_total_energy_dev']   = float(line.split()[1])*KELVIN_TO_KJ_PER_MOL
+                            result_dict['host_ads_wdv_energy_dev']     = float(line.split()[3])*KELVIN_TO_KJ_PER_MOL
+                            result_dict['host_ads_coulomb_energy_dev'] = float(line.split()[5])*KELVIN_TO_KJ_PER_MOL    
+                            break
                     break
-#                if 'warnings' in line:
-#                    result_dict['nwarnings'] = int(line.split()[-2])
-            i = 0
-            for line in f:
-                if 'Average loading absolute [molecules/unit cell]' in line:
-                    res_per_component[i]['loading_absolute_average'] = \
-                            float(line.split()[5])
-                    res_per_component[i]['loading_absolute_dev'] = \
-                            float(line.split()[7])
-                    res_per_component[i]['loading_absolute_units'] = \
-                            'molecules/unit cell'
-                if 'Average loading excess [molecules/unit cell]' in line:
-                    res_per_component[i]['loading_excess_average'] = \
-                            float(line.split()[5])
-                    res_per_component[i]['loading_excess_dev'] = \
-                            float(line.split()[7])
-                    res_per_component[i]['loading_excess_units'] = \
-                            'molecules/unit cell'
-                    i += 1
-                if i >= ncomponents:
-                    break
-#                if 'exceeded requested execution time' in line:
-#                    result_dict['exceeded_walltime'] = True
-#            self.logger.error("before henry {}".format(res_per_component))
-            for line in f:
-                if av_henry_coeff_component.search(line):
-                    extract_component_quantity(res_per_component,
-                            component_names, line, "average_henry_coefficient")
 
-                if av_chem_pot_component.search(line):
-                    extract_component_quantity(res_per_component,
-                            component_names, line,
-                            "average_chemical_potential")
+            # Jump to the "Adsorbate results" section   
+            for line in f: 
+                if 'Number of molecules:' in line:
+                    break
+
+            # Parse the "Adsorbate results" section
+            if ncomponents>0:
+                icomponent = 0  
+                for line in f:
+                    if 'Average loading absolute [molecules/unit cell]' in line:
+                        res_per_component[icomponent]['loading_absolute_average'] = float(line.split()[5])
+                        res_per_component[icomponent]['loading_absolute_dev'] = float(line.split()[7])
+                        res_per_component[icomponent]['loading_absolute_units'] = 'molec/uc'
+                    if 'Average loading excess [molecules/unit cell]' in line:
+                        res_per_component[icomponent]['loading_excess_average'] = float(line.split()[5])
+                        res_per_component[icomponent]['loading_excess_dev'] = float(line.split()[7])
+                        res_per_component[icomponent]['loading_excess_units'] = 'molec/uc'
+                        icomponent += 1
+                    if icomponent == ncomponents:
+                        break
+
+            for line in f: 
+                if 'Average Henry coefficient:' in line:
+                   for line in f:
+                       for icomponent in range(len(component_names)):
+                           if component_names[icomponent] in line: 
+                               res_per_component[icomponent]['average_henry_coefficient_units'] = 'mol/kg/Pa'
+                               res_per_component[icomponent]['average_henry_coefficient'] = float(line.split()[4])
+                               res_per_component[icomponent]['average_henry_coefficient_dev'] = float(line.split()[6])
+                       if 'Average adsorption energy' in line:
+                           break
+                   break 
+            #End of the Raspa file   
 
         pair = (self.get_linkname_outparams(), ParameterData(dict=result_dict))
         new_nodes_list.append(pair)
