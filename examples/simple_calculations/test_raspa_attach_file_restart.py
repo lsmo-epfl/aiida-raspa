@@ -46,8 +46,6 @@ parameters = ParameterData(dict={
     "SimulationType"                   : "MonteCarlo",
     "NumberOfCycles"                   : 2000,
     "NumberOfInitializationCycles"     : 2000,
-    "RestartFile"                      : True,
-    "RestartFilePk"                    : parent_calc,
     "PrintEvery"                       : 1000,
     "Forcefield"                       : "GenericMOFs",
     "EwaldPrecision"                   : 1e-6,
@@ -70,10 +68,13 @@ parameters = ParameterData(dict={
 })
 calc.use_parameters(parameters)
 
-# Additional files
+# framework structure
 pwd = os.path.dirname(os.path.realpath(__file__))
 framework = CifData(file=pwd+'/test_raspa_attach_file/TCC1RS.cif')
 calc.use_structure(framework)
+
+# restart file
+calc.use_retrieved_parent_folder(load_node(parent_calc).out.retrieved)
 
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min
