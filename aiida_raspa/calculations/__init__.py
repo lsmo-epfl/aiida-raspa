@@ -188,7 +188,6 @@ class RaspaCalculation(JobCalculation):
         for fname in restart_folder.get_folder_list():
             if "restart" in fname:
                 content = restart_folder.get_file_content(fname)
-
         if content == None:
             raise InputValidationError("Restart was requested but the restart"
                     " file was not found in the previos calculation.")
@@ -248,9 +247,10 @@ class RaspaCalculation(JobCalculation):
         settings = settings_node.get_dict()
 
         # folder with the restart information
-        restart_folder = inputdict.pop('retrieved_parent_folder', FolderData())
-        if not isinstance(restart_folder, FolderData):
-            raise InputValidationError("retrieved parent folder type not FolderData")
+        restart_folder = inputdict.pop('retrieved_parent_folder', None)
+        if restart_folder is not None and not isinstance(restart_folder, FolderData):
+            raise InputValidationError("retrieved parent folder is of type {}, "
+                    "but not FolderData".format(type(restart_folder)))
 
 
         # handle additional parameter files
