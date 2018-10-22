@@ -13,11 +13,14 @@ from aiida.common.exceptions import InputValidationError
 from aiida.common.utils import classproperty
 from aiida.orm import load_node
 from aiida.orm.calculation.job import JobCalculation
-from aiida.orm.data.cif import CifData
-from aiida.orm.data.folder import FolderData
-from aiida.orm.data.parameter import ParameterData
-from aiida.orm.data.remote import RemoteData
-from aiida.orm.data.singlefile import SinglefileData
+from aiida.orm.utils import DataFactory
+
+# data objects
+CifData = DataFactory('cif')
+FolderData = DataFactory('folder')
+ParameterData = DataFactory('parameter')
+RemoteData = DataFactory('remote')
+SinglefileData = DataFactory('singlefile')
 
 from shutil import copyfile
 
@@ -76,16 +79,22 @@ class RaspaCalculation(JobCalculation):
             "parent_folder": {
                'valid_types': RemoteData,
                'additional_parameter': None,
-               'linkname': 'parent__folder',
+               'linkname': 'parent_folder',
                'docstring': "Use a remote folder as parent folder "
                             "(for restarts and similar)",
+               },
+            # TODO: modify this for aiida version 1.0
+            "block_component_0": {
+               'valid_types': SinglefileData,
+               'additional_parameter': None,
+               'linkname': 'block_component_0',
+               'docstring': "Use block pockets obtained with Zeo++ code",
                },
             "retrieved_parent_folder": {
                'valid_types': FolderData,
                'additional_parameter': None,
                'linkname': 'retrieved_parent_folder',
-               'docstring': "Use a remote folder as parent folder "
-                            "(for restarts and similar)",
+               'docstring': "Use retrieved restart file for restart of this calculation",
                },
             "file": {
                'valid_types': SinglefileData,
@@ -114,22 +123,17 @@ class RaspaCalculation(JobCalculation):
         """
 
         in_nodes = self._verify_inlinks(inputdict)
-        params, structure, code, settings, restart_folder, local_copy_list = in_nodes
+        params, structure, code, settings, block_pockets, restart_folder, local_copy_list = in_nodes
 
         # handle restart
         if restart_folder is not None:
             self._create_restart(restart_folder, params, tempfolder)
- 
-        for i, component in enumerate (params['Component']):
-            if 'BlockPockets' in component:
-                if  component['BlockPockets'] is True:
-                    if 'BlockPocketsPk' in component:
-                        self._create_block(params, tempfolder, i)
-                    else:
-                        raise InputValidationError("You did not specify"
-                            " the parent pk number for block calculation."
-                            " Please define BlockPocketsPk in the input"
-                            " Component {} section".format(i))
+
+        # handle block pockets
+        for i, block_pocket in enumerate(block_pockets):
+            params['Component'][i]['BlockPocketsFileName'] = 'component_{}'.format(i)
+            copyfile(block_pocket.get_file_abs_path(),
+                    tempfolder.get_subfolder(".").get_abs_path('component_{}.block'.format(i)))
     
         # write raspa input file
         if 'FrameworkName' in params['GeneralSettings']:
@@ -201,22 +205,6 @@ class RaspaCalculation(JobCalculation):
 
         with open(fn, "w") as f:
             f.write(content)
-            
-    # --------------------------------------------------------------------------
-    def _create_block(self, params, tempfolder, component):
-        pk = params['Component'][component].pop('BlockPocketsPk')
-        if pk is not None:
-            pn = load_node(pk)
-            params['Component'][component]['BlockPocketsFileName'] = 'component_{}'.format(component)
-        else:
-            raise InputValidationError("Illegal value of the Component {} BlockPocketsPk. It should be a"
-            " valid pk of a previous zeo++ block calculation".format(load_node(params['Component'][component]['BlockPocketsPk'])))
-        for i in pn.out.retrieved.get_folder_list():
-            if "out.block" in i:
-                content = pn.out.retrieved.get_file_content(i)
-        fn = tempfolder.get_subfolder(".").get_abs_path('component_{}.block'.format(component))
-        with open(fn, "w") as f:
-            f.write(content)
 
     # --------------------------------------------------------------------------
     def _verify_inlinks(self, inputdict):
@@ -227,6 +215,11 @@ class RaspaCalculation(JobCalculation):
         if not isinstance(params_node, ParameterData):
             raise InputValidationError("parameters type not ParameterData")
         params = params_node.get_dict()
+
+        try:
+            n_components = len(params['Component'])
+        except:
+            raise InputValidationError("Component section was not provided in the input parameters")
 
         # structure
         structure = inputdict.pop('structure', None)
@@ -246,6 +239,19 @@ class RaspaCalculation(JobCalculation):
             raise InputValidationError("settings type not ParameterData")
         settings = settings_node.get_dict()
 
+        # block pockets
+        block_pockets = []
+        for i in range(n_components):
+            bp = inputdict.pop('block_component_{}'.format(i), None)
+            if bp:
+                if isinstance(bp, SinglefileData):
+                    block_pockets.append(bp)
+                else:
+                    raise InputValidationError("Block pockets should be either None, or of the type SinglefileData."
+                    "You provided the object {} of type {}".format(bp, type(bp)))
+
+
+
         # folder with the restart information
         restart_folder = inputdict.pop('retrieved_parent_folder', None)
         if restart_folder is not None and not isinstance(restart_folder, FolderData):
@@ -264,7 +270,7 @@ class RaspaCalculation(JobCalculation):
             msg = "unrecognized input nodes: " + str(inputdict.keys())
             raise InputValidationError(msg)
 
-        return(params, structure, code, settings, restart_folder, local_copy_list)
+        return(params, structure, code, settings, block_pockets, restart_folder, local_copy_list)
 
 
 # ==============================================================================

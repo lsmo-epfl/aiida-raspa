@@ -13,24 +13,24 @@ from __future__ import print_function
 import sys
 import os
 
-from aiida import load_dbenv, is_dbenv_loaded
 from aiida.backends import settings
-if not is_dbenv_loaded():
-    load_dbenv(profile=settings.AIIDADB_PROFILE)
-
 from aiida.common.example_helpers import test_and_get_code  
-from aiida.orm.data.cif import CifData 
-from aiida.orm.data.parameter import ParameterData 
-from aiida.orm.data.singlefile import SinglefileData
+
+# data objects
+CifData = DataFactory('cif')
+ParameterData = DataFactory('parameter')
+SinglefileData = DataFactory('singlefile')
 
 
 # ==============================================================================
-if len(sys.argv) != 2:
-    print("Usage: test_raspa.py <code_name>")
+if len(sys.argv) != 3:
+    print("Usage: test_raspa.py <code_name> parent_calc_pk")
     sys.exit(1)
 
 codename = sys.argv[1]
 code = test_and_get_code(codename, expected_code_type='raspa')
+
+parent_calc = int(sys.argv[2])
 
 print("Testing RASPA...")
 
@@ -66,10 +66,13 @@ parameters = ParameterData(dict={
 })
 calc.use_parameters(parameters)
 
-# Additional files
+# structure
 pwd = os.path.dirname(os.path.realpath(__file__))
 framework = CifData(file=pwd+'/test_raspa_attach_file/TCC1RS.cif')
 calc.use_structure(framework)
+
+# restart file
+calc.use_retrieved_parent_folder(load_node(parent_calc).out.retrieved)
 
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min

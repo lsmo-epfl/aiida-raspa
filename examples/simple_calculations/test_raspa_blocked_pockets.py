@@ -13,15 +13,14 @@ from __future__ import print_function
 import sys
 import os
 
-from aiida import load_dbenv, is_dbenv_loaded
 from aiida.backends import settings
-if not is_dbenv_loaded():
-    load_dbenv(profile=settings.AIIDADB_PROFILE)
+from aiida.common.example_helpers import test_and_get_code
+from aiida.orm.utils import DataFactory
 
-from aiida.common.example_helpers import test_and_get_code  
-from aiida.orm.data.cif import CifData 
-from aiida.orm.data.parameter import ParameterData 
-from aiida.orm.data.singlefile import SinglefileData
+# data objects
+CifData = DataFactory('cif')
+ParameterData = DataFactory('parameter')
+SinglefileData = DataFactory('singlefile')
 
 
 # ==============================================================================
@@ -31,8 +30,6 @@ if len(sys.argv) != 3:
 
 codename = sys.argv[1]
 code = test_and_get_code(codename, expected_code_type='raspa')
-
-zeopp_pk = int(sys.argv[2])
 
 print("Testing RASPA...")
 
@@ -64,16 +61,19 @@ parameters = ParameterData(dict={
     "ReinsertionProbability"           : 0.5,
     "SwapProbability"                  : 1.0,
     "CreateNumberOfMolecules"          : 0,
-    "BlockPockets"                     : True,
-    "BlockPocketsPk"                   : zeopp_pk,
     }],
 })
 calc.use_parameters(parameters)
 
-# Additional files
+# structure
 pwd = os.path.dirname(os.path.realpath(__file__))
 framework = CifData(file=pwd+'/test_raspa_attach_file/TCC1RS.cif')
 calc.use_structure(framework)
+
+# block pockets
+block_pockets_pk = int(sys.argv[2])
+bp = load_node(block_pockets_pk)
+calc.use_block_component_0(bp)
 
 # resources
 calc.set_max_wallclock_seconds(30*60)  # 30 min

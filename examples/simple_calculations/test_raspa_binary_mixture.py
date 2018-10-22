@@ -13,15 +13,13 @@ from __future__ import print_function
 import sys
 import os
 
-from aiida import load_dbenv, is_dbenv_loaded
 from aiida.backends import settings
-if not is_dbenv_loaded():
-    load_dbenv(profile=settings.AIIDADB_PROFILE)
-
 from aiida.common.example_helpers import test_and_get_code  
-from aiida.orm.data.cif import CifData 
-from aiida.orm.data.parameter import ParameterData 
-from aiida.orm.data.singlefile import SinglefileData
+
+# data objects
+CifData = DataFactory('cif')
+ParameterData = DataFactory('parameter')
+SinglefileData = DataFactory('singlefile')
 
 
 # ==============================================================================
@@ -69,7 +67,7 @@ parameters = ParameterData(dict={
     "ReinsertionProbability"           : 1.0,
     "SwapProbability"                  : 1.0,
     "CreateNumberOfMolecules"          : 30,
-    }],  
+    }],
 })
 calc.use_parameters(parameters)
 

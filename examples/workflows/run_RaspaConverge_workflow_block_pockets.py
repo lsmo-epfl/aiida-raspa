@@ -13,8 +13,8 @@ SinglefileData = DataFactory('singlefile')
 from aiida_raspa.workflows import RaspaConvergeWorkChain
 
 # ==============================================================================
-if len(sys.argv) != 2:
-    print("Usage: test_raspa.py <code_name>")
+if len(sys.argv) != 3:
+    print("Usage: test_raspa.py <code_name> zeo++_block_pk")
     sys.exit(1)
 
 codename = sys.argv[1]
@@ -63,10 +63,15 @@ parameters = ParameterData(dict=params_dict)
 pwd = os.path.dirname(os.path.realpath(__file__))
 structure = CifData(file=pwd+'/test_raspa_attach_file/TCC1RS.cif')
 
+# block pockets
+block_pockets_pk = int(sys.argv[2])
+bp = load_node(block_pockets_pk)
+
 submit(RaspaConvergeWorkChain,
         code=code,
         structure=structure,
         parameters=parameters,
+        block_component_0 = bp,
         options=options,
         _label='MyFirstWokchain',
         ) 
