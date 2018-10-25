@@ -102,6 +102,7 @@ class RaspaParser(Parser):
 
         # check for valid input
         if not isinstance(calc, RaspaCalculation):
+            raise OutputParsingError("Input calc must be a RaspaCalculation")
     # --------------------------------------------------------------------------
     def parse_with_retrieved(self, retrieved):
         """Receives in input a dictionary of retrieved nodes. Does all the logic here."""
