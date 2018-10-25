@@ -131,9 +131,11 @@ class RaspaCalculation(JobCalculation):
 
         # handle block pockets
         for i, block_pocket in enumerate(block_pockets):
-            params['Component'][i]['BlockPocketsFileName'] = 'component_{}'.format(i)
-            copyfile(block_pocket.get_file_abs_path(),
-                    tempfolder.get_subfolder(".").get_abs_path('component_{}.block'.format(i)))
+            if block_pocket:
+                params['Component'][i]['BlockPocketsFileName'] = 'component_{}'.format(i)
+                params['Component'][i]['BlockPockets'] = 'yes'
+                copyfile(block_pocket.get_file_abs_path(),
+                        tempfolder.get_subfolder(".").get_abs_path('component_{}.block'.format(i)))
     
         # write raspa input file
         if 'FrameworkName' in params['GeneralSettings']:
@@ -249,6 +251,8 @@ class RaspaCalculation(JobCalculation):
                 else:
                     raise InputValidationError("Block pockets should be either None, or of the type SinglefileData."
                     "You provided the object {} of type {}".format(bp, type(bp)))
+            else:
+                block_pockets.append(None)
 
 
 
