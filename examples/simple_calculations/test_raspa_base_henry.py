@@ -42,7 +42,6 @@ parameters = ParameterData(dict={
     {
     "SimulationType"                   : "MonteCarlo",
     "NumberOfCycles"                   : 2000,
-    "NumberOfInitializationCycles"     : 2000,
     "PrintEvery"                       : 1000,
     "Forcefield"                       : "GenericMOFs",
     "EwaldPrecision"                   : 1e-6,
@@ -51,7 +50,6 @@ parameters = ParameterData(dict={
     "UnitCells"                        : "1 1 1",
     "HeliumVoidFraction"               : 0.149,
     "ExternalTemperature"              : 300.0,
-    "ExternalPressure"                 : 5e5,
     },
     "Component":
     [{

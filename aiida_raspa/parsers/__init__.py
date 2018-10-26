@@ -82,6 +82,7 @@ lines_with_component_list = [
         (re.compile(" Average chemical potential: "), "chemical_potential"),
         (re.compile(" Average Henry coefficient: "), "henry_coefficient"),
         (re.compile(" Average  <U_gh>_1-<U_h>_0:"), "adsorption_energy_widom"),
+        (re.compile(" Average Widom Rosenbluth-weight:"), "widom_rosenbluth_factor"),
         ]
 def parse_lines_with_component(res_components, components, line, prop):
     # self.logger.info("analysing line: {}".format(line))
