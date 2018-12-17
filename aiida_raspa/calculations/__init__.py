@@ -151,6 +151,7 @@ class RaspaCalculation(JobCalculation):
                 ' as an input parameter. It will be generated automatically'
                 ' by AiiDA')
         else:
+            params['GeneralSettings']['Framework'] = '0'
             params['GeneralSettings']['FrameworkName'] = 'framework'
         inp = RaspaInput(params)
         inp_fn = tempfolder.get_abs_path(self._INPUT_FILE_NAME)

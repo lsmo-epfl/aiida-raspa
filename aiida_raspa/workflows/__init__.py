@@ -10,6 +10,7 @@ from aiida.work.workchain import WorkChain, Outputs
 from aiida.orm.code import Code
 from aiida.orm.utils import CalculationFactory, DataFactory
 from aiida.work.workchain import ToContext, while_
+import six
 
 # data objects
 CifData = DataFactory('cif')
@@ -28,6 +29,44 @@ default_options = {
 }
 
 
+# pylint: disable=too-many-locals
+def multiply_unit_cell(cif, threshold):
+    """Resurns the multiplication factors (tuple of 3 int) for the cell vectors
+    that are needed to respect: min(perpendicular_width) > threshold
+    """
+    from math import cos, sin, sqrt, pi
+    import numpy as np
+    deg2rad = pi / 180.
+
+    struct = six.itervalues(cif.values.dictionary)
+
+    a = float(struct['_cell_length_a'])
+    b = float(struct['_cell_length_b'])
+    c = float(struct['_cell_length_c'])
+
+    alpha = float(struct['_cell_angle_alpha']) * deg2rad
+    beta = float(struct['_cell_angle_beta']) * deg2rad
+    gamma = float(struct['_cell_angle_gamma']) * deg2rad
+
+    # first step is computing cell parameters according to  https://en.wikipedia.org/wiki/Fractional_coordinates
+    # Note: this is the algorithm implemented in Raspa (framework.c/UnitCellBox). There also is a simpler one but it is less robust.
+    v = sqrt(1 - cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 +
+             2 * cos(alpha) * cos(beta) * cos(gamma))
+    cell = np.zeros((3, 3))
+    cell[0, :] = [a, 0, 0]
+    cell[1, :] = [b * cos(gamma), b * sin(gamma), 0]
+    cell[2, :] = [
+        c * cos(beta),
+        c * (cos(alpha) - cos(beta) * cos(gamma)) / (sin(gamma)),
+        c * v / sin(gamma)
+    ]
+    cell = np.array(cell)
+
+    # diagonalizing the cell matrix: note that the diagonal elements are the perpendicolar widths because ay=az=bz=0
+    diag = np.diag(cell)
+    return tuple(int(i) for i in np.ceil(threshold / diag * 2.))
+
+
 class RaspaConvergeWorkChain(WorkChain):
     """A base workchain to get converged RASPA calculations"""
 
@@ -37,10 +76,7 @@ class RaspaConvergeWorkChain(WorkChain):
 
         spec.input('code', valid_type=Code)
         spec.input('structure', valid_type=CifData)
-        spec.input(
-            "parameters",
-            valid_type=ParameterData,
-            default=ParameterData(dict={}))
+        spec.input("parameters", valid_type=ParameterData)
         spec.input(
             'retrieved_parent_folder',
             valid_type=FolderData,
@@ -70,6 +106,7 @@ class RaspaConvergeWorkChain(WorkChain):
         self.ctx.done = False
         self.ctx.nruns = 0
         self.ctx.structure = self.inputs.structure
+
         self.ctx.parameters = self.inputs.parameters.get_dict()
 
         # restard provided?
@@ -103,6 +140,11 @@ class RaspaConvergeWorkChain(WorkChain):
         if self.ctx.block_component_0 is not None:
             self.ctx.inputs['block_component_0'] = self.ctx.block_component_0
 
+        # Reading the CutOff, compute the UnitCells expansion
+        cutoff = self.ctx.parameters['GeneralSettings']['CutOff']
+        ucs = multiply_unit_cell(self.inputs.structure, cutoff)
+        self.ctx.parameters['GeneralSettings'][
+            'UnitCells'] = "{} {} {}".format(ucs[0], ucs[1], ucs[2])
         # use the new parameters
         p = ParameterData(dict=self.ctx.parameters)
         p.store()
