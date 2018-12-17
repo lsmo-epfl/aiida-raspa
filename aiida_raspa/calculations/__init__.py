@@ -136,13 +136,14 @@ class RaspaCalculation(JobCalculation):
                 params['Component'][i]['BlockPockets'] = 'yes'
                 copyfile(block_pocket.get_file_abs_path(),
                         tempfolder.get_subfolder(".").get_abs_path('component_{}.block'.format(i)))
-    
+
         # write raspa input file
         if 'FrameworkName' in params['GeneralSettings']:
             raise InputValidationError('You should not provide "FrameworkName"'
                 ' as an input parameter. It will be generated automatically'
                 ' by AiiDA')
         else:
+            params['GeneralSettings']['Framework'] = '0'
             params['GeneralSettings']['FrameworkName'] = 'framework'
         inp = RaspaInput(params)
         inp_fn = tempfolder.get_abs_path(self._INPUT_FILE_NAME)
@@ -154,7 +155,7 @@ class RaspaCalculation(JobCalculation):
         if structure is not None:
             dest = tempfolder.get_abs_path(structure.filename)
             copyfile(structure.get_file_abs_path(), tempfolder.get_abs_path(self._COORDS_FILE_NAME))
-        
+
 
         # create code info
         codeinfo = CodeInfo()
