@@ -1,7 +1,11 @@
 #!/usr/bin/env runaiida
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import click
+
+from aiida.orm.utils import Code, DataFactory
 
 
 @click.command('cli')
@@ -45,15 +49,15 @@ def main(codelabel, submit):
     if submit:
         calc.store_all()
         calc.submit()
-        print("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\
-                .format(calc.uuid,calc.dbnode.pk))
+        print(("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\
+                .format(calc.uuid,calc.dbnode.pk)))
     else:
-        subfolder, script_filename = calc.submit_test()
+        subfolder = calc.submit_test()[0]
         path = os.path.relpath(subfolder.abspath)
         print("submission test successful")
-        print("Find remote folder in {}".format(path))
+        print(("Find remote folder in {}".format(path)))
         print("In order to actually submit, add '--submit'")
 
 
 if __name__ == '__main__':
-    main()
+    main()  # pylint: disable=no-value-for-parameter

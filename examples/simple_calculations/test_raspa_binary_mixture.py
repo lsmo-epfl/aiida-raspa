@@ -10,17 +10,16 @@
 ##############################################################################
 from __future__ import print_function
 
+from __future__ import absolute_import
 import sys
-import os
 
-from aiida.backends import settings
-from aiida.common.example_helpers import test_and_get_code  
+from aiida.common.example_helpers import test_and_get_code
+from aiida.orm.utils import DataFactory
 
 # data objects
 CifData = DataFactory('cif')
 ParameterData = DataFactory('parameter')
 SinglefileData = DataFactory('singlefile')
-
 
 # ==============================================================================
 if len(sys.argv) != 2:
@@ -36,45 +35,43 @@ print("Testing RASPA...")
 calc = code.new_calc()
 
 # parameters
-parameters = ParameterData(dict={
-    "GeneralSettings":
-    {
-    "SimulationType"                   : "MonteCarlo",
-    "NumberOfCycles"                   : 2000,
-    "NumberOfInitializationCycles"     : 2000,
-    "PrintEvery"                       : 1000,
-    "Forcefield"                       : "GenericMOFs",
-    "EwaldPrecision"                   : 1e-6,
-    "CutOff"                           : 12.0,
-    "Box"                              : 0,
-    "BoxLengths"                       : "25 25 25",
-    "ExternalTemperature"              : 300.0,
-    "ExternalPressure"                 : 5e5,
-    },
-    "Component":
-    [{
-    "MoleculeName"                     : "propane",
-    "MoleculeDefinition"               : "TraPPE",
-    "TranslationProbability"           : 1.0,
-    "ReinsertionProbability"           : 1.0,
-    "SwapProbability"                  : 1.0,
-    "CreateNumberOfMolecules"          : 30,
-    },
-    {
-    "MoleculeName"                     : "butane",
-    "MoleculeDefinition"               : "TraPPE",
-    "TranslationProbability"           : 1.0,
-    "ReinsertionProbability"           : 1.0,
-    "SwapProbability"                  : 1.0,
-    "CreateNumberOfMolecules"          : 30,
-    }],
-})
+parameters = ParameterData(
+    dict={
+        "GeneralSettings": {
+            "SimulationType": "MonteCarlo",
+            "NumberOfCycles": 2000,
+            "NumberOfInitializationCycles": 2000,
+            "PrintEvery": 1000,
+            "Forcefield": "GenericMOFs",
+            "EwaldPrecision": 1e-6,
+            "CutOff": 12.0,
+            "Box": 0,
+            "BoxLengths": "25 25 25",
+            "ExternalTemperature": 300.0,
+            "ExternalPressure": 5e5,
+        },
+        "Component": [{
+            "MoleculeName": "propane",
+            "MoleculeDefinition": "TraPPE",
+            "TranslationProbability": 1.0,
+            "ReinsertionProbability": 1.0,
+            "SwapProbability": 1.0,
+            "CreateNumberOfMolecules": 30,
+        },
+                      {
+                          "MoleculeName": "butane",
+                          "MoleculeDefinition": "TraPPE",
+                          "TranslationProbability": 1.0,
+                          "ReinsertionProbability": 1.0,
+                          "SwapProbability": 1.0,
+                          "CreateNumberOfMolecules": 30,
+                      }],
+    })
 calc.use_parameters(parameters)
 
-
 # resources
-calc.set_max_wallclock_seconds(30*60)  # 30 min
-calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine":1})
+calc.set_max_wallclock_seconds(30 * 60)  # 30 min
+calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine": 1})
 calc.set_withmpi(False)
 #calc.set_queue_name("serial")
 

@@ -10,7 +10,6 @@
     ],
     "version": "0.2.2",
     "setup_requires": ["reentry"],
-    "reentry_register": true,
     "install_requires": [
         "aiida >= 0.9"
     ],
@@ -24,5 +23,13 @@
         "aiida.workflows": [
             "raspa.converge = aiida_raspa.workflows:RaspaConvergeWorkChain"
         ]
-    }
+    },
+    "reentry_register": true,
+    "extras_require": {
+	    "pre-commit": [
+		    "pre-commit==1.11.0",
+		    "yapf==0.24.0",
+		    "prospector==1.1.5",
+		    "pylint==1.9.3"
+	    ]
 }
