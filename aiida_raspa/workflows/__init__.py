@@ -38,7 +38,7 @@ def multiply_unit_cell(cif, threshold):
     import numpy as np
     deg2rad = pi / 180.
 
-    struct = six.itervalues(cif.values.dictionary)
+    struct = next(six.itervalues(cif.values.dictionary))
 
     a = float(struct['_cell_length_a'])
     b = float(struct['_cell_length_b'])
@@ -100,6 +100,7 @@ class RaspaConvergeWorkChain(WorkChain):
         )
         spec.output('retrieved_parent_folder', valid_type=FolderData)
         spec.output('component_0', valid_type=ParameterData)
+        spec.output('output_parameters', valid_type=ParameterData)
 
     def setup(self):
         """Perform initial setup"""
@@ -176,3 +177,5 @@ class RaspaConvergeWorkChain(WorkChain):
         self.out('retrieved_parent_folder', self.ctx.restart_calc)
         # TODO: extend for the multi-component systems
         self.out('component_0', self.ctx.calculation['component_0'])
+        self.out('output_parameters',
+                 self.ctx.calculation['output_parameters'])
