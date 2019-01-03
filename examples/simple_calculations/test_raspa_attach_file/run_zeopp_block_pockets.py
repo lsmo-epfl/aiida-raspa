@@ -5,7 +5,7 @@ from __future__ import print_function
 import os
 import click
 
-from aiida.orm.utils import Code, DataFactory
+from aiida.orm import Code, DataFactory
 
 
 @click.command('cli')

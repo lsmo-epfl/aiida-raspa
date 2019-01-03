@@ -150,7 +150,7 @@ class RaspaCalculation(JobCalculation):
                 'You should not provide "FrameworkName"'
                 ' as an input parameter. It will be generated automatically'
                 ' by AiiDA')
-        else:
+        elif structure is not None:
             params['GeneralSettings']['Framework'] = '0'
             params['GeneralSettings']['FrameworkName'] = 'framework'
         inp = RaspaInput(params)
