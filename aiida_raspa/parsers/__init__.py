@@ -1,16 +1,7 @@
 # -*- coding: utf-8 -*-
-##############################################################################
-# Copyright (c), The AiiDA team. All rights reserved.                        #
-# This file is part of the AiiDA code.                                       #
-#                                                                            #
-# The code is hosted on GitHub at https://github.com/yakutovicha/aiida-raspa #
-# For further information on the license, see the LICENSE.txt file           #
-# For further information please visit http://www.aiida.net                  #
-##############################################################################
-
 from __future__ import absolute_import
 from six.moves import range
-__version__ = "0.2.2"
+__version__ = "0.3.0"
 
 import re
 from aiida.parsers.parser import Parser

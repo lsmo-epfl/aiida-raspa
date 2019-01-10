@@ -17,7 +17,12 @@ SinglefileData = DataFactory('singlefile')
 @click.command('cli')
 @click.argument('codelabel')
 @click.option(
-    '--block_pockets', '-b', required=True, type=int, help='Block pockets')
+    '--block_pockets',
+    '-b',
+    required=True,
+    type=int,
+    help='Block pockets node, can be updained using'
+    ' test_raspa_attach_file/run_zeopp_block_pockets.py')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
 def main(codelabel, block_pockets, submit):
     code = test_and_get_code(codelabel, expected_code_type='raspa')
