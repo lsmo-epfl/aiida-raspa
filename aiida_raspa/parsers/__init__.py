@@ -1,13 +1,22 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from six.moves import range
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 import re
+from math import isnan
 from aiida.parsers.parser import Parser
 from aiida.orm.data.parameter import ParameterData
 from aiida_raspa.calculations import RaspaCalculation
 from aiida.parsers.exceptions import OutputParsingError
+
+float_base = float
+
+
+def float(number):  # pylint: disable=redefined-builtin
+    number = float_base(number)
+    return number if not isnan(number) else None
+
 
 KELVIN_TO_KJ_PER_MOL = float(8.314464919 / 1000.0)  #exactly the same as Raspa
 
