@@ -8,6 +8,7 @@ from aiida.orm.calculation.job import JobCalculation
 from aiida.orm.utils import DataFactory
 from six.moves import map
 from six.moves import range
+from ase.io import read, write
 from shutil import copyfile
 
 # data objects
@@ -160,8 +161,10 @@ class RaspaCalculation(JobCalculation):
 
         # create structure file
         if structure is not None:
-            copyfile(structure.get_file_abs_path(),
-                     tempfolder.get_abs_path(self._COORDS_FILE_NAME))
+            # rewrite cif file using ase to get correct labels column in format e.g. O1 O2 ...
+            # otherwise RASPA parses cif file often incorrectly
+            atoms = structure.get_ase()
+            write(tempfolder.get_abs_path(self._COORDS_FILE_NAME), atoms)
 
         # create code info
         codeinfo = CodeInfo()

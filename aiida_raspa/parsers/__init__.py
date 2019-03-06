@@ -168,6 +168,8 @@ class RaspaParser(Parser):
             res_cmp = res_per_component[0]
             for line in f:
                 # TODO maybe change for parse_line?
+                if "WARNING" in line:
+                    self.logger.warning(line)
                 if "Conversion factor molecules/unit cell -> mol/kg:" in line:
                     res_cmp['conversion_factor_molec_uc_to_mol_kg'] = float(
                         line.split()[6])
