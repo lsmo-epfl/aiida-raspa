@@ -11,7 +11,8 @@
     "version": "0.3.1",
     "setup_requires": ["reentry"],
     "install_requires": [
-        "aiida >= 0.9"
+        "aiida >= 0.9",
+        "ase"
     ],
     "entry_points": {
         "aiida.calculations": [
