@@ -31,8 +31,8 @@ default_options = {
 
 # pylint: disable=too-many-locals
 def multiply_unit_cell(cif, threshold):
-    """Resurns the multiplication factors (tuple of 3 int) for the cell vectors
-    that are needed to respect: min(perpendicular_width) > threshold
+    """Returns the multiplication factors (tuple of 3 int) for the cell vectors
+    to respect, in every direction: min(perpendicular_width) > threshold
     """
     from math import cos, sin, sqrt, pi
     import numpy as np
@@ -143,7 +143,7 @@ class RaspaConvergeWorkChain(WorkChain):
 
         # Reading the CutOff, compute the UnitCells expansion
         cutoff = self.ctx.parameters['GeneralSettings']['CutOff']
-        ucs = multiply_unit_cell(self.inputs.structure, cutoff)
+        ucs = multiply_unit_cell(self.inputs.structure, cutoff*2)
         self.ctx.parameters['GeneralSettings'][
             'UnitCells'] = "{} {} {}".format(ucs[0], ucs[1], ucs[2])
         # use the new parameters
