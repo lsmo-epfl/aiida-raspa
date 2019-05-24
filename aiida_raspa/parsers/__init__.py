@@ -10,12 +10,12 @@ from aiida.orm.data.parameter import ParameterData
 from aiida_raspa.calculations import RaspaCalculation
 from aiida.parsers.exceptions import OutputParsingError
 
-float_base = float
-
-
-def float(number):  # pylint: disable=redefined-builtin
-    number = float_base(number)
-    return number if not isnan(number) else None
+# Convert NaN to None for aiida-v1. Disabled to be compatible with VolpoKhIsothermWorkChain
+#float_base = float
+#
+#def float(number):  # pylint: disable=redefined-builtin
+#    number = float_base(number)
+#    return number if not isnan(number) else None
 
 
 KELVIN_TO_KJ_PER_MOL = float(8.314464919 / 1000.0)  #exactly the same as Raspa
