@@ -31,6 +31,8 @@ block1_list = [
     (re.compile("Heat of desorption:"), "heat_of_desorption", (1, 4, 3)),
     (re.compile("Enthalpy of adsorption:"), "enthalpy_of_adsorption", (1, 4,
                                                                        3)),
+    (re.compile("Tail-correction energy:$"), "tail_correction_energy", (1, 2,
+                                                                      4)),
 ]
 
 

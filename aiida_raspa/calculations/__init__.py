@@ -163,8 +163,11 @@ class RaspaCalculation(JobCalculation):
         if structure is not None:
             # rewrite cif file using ase to get correct labels column in format e.g. O1 O2 ...
             # otherwise RASPA parses cif file often incorrectly
-            atoms = structure.get_ase()
-            write(tempfolder.get_abs_path(self._COORDS_FILE_NAME), atoms)
+            # atoms = structure.get_ase()
+            # write(tempfolder.get_abs_path(self._COORDS_FILE_NAME), atoms)
+            copyfile(structure.get_file_abs_path(),
+                    tempfolder.get_abs_path(self._COORDS_FILE_NAME))
+
 
         # create code info
         codeinfo = CodeInfo()

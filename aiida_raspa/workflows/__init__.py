@@ -30,11 +30,52 @@ default_options = {
 
 
 # pylint: disable=too-many-locals
-def multiply_unit_cell(cif, threshold):
+
+def get_perpendicular_width(lattice_matrix):
+    """
+    From Daniele Ongari's 'manage_crystal' code.
+    :param lattice_matrix: lattice vector matrix
+    :return: list with perpendicular widths in a, b and c
+    """
+    from math import sqrt, fabs
+    ax = lattice_matrix[0][0]
+    ay = lattice_matrix[0][1]
+    az = lattice_matrix[0][2]
+    bx = lattice_matrix[1][0]
+    by = lattice_matrix[1][1]
+    bz = lattice_matrix[1][2]
+    cx = lattice_matrix[2][0]
+    cy = lattice_matrix[2][1]
+    cz = lattice_matrix[2][2]
+
+    # calculate vector products of cell vectors
+    axb1 = ay * bz - az * by
+    axb2 = az * bx - ax * bz
+    axb3 = ax * by - ay * bx
+    bxc1 = by * cz - bz * cy
+    bxc2 = bz * cx - bx * cz
+    bxc3 = bx * cy - by * cx
+    cxa1 = cy * az - ay * cz
+    cxa2 = ax * cz - az * cx
+    cxa3 = ay * cx - ax * cy
+
+    # calculate volume of cell
+    V = fabs(ax * bxc1 + ay * bxc2 + az * bxc3)
+
+    # calculate cell perpendicular widths
+    perp_width = [0.0] * 3
+    perp_width[0] = V / sqrt(bxc1 ** 2 + bxc2 ** 2 + bxc3 ** 2)
+    perp_width[1] = V / sqrt(cxa1 ** 2 + cxa2 ** 2 + cxa3 ** 2)
+    perp_width[2] = V / sqrt(axb1 ** 2 + axb2 ** 2 + axb3 ** 2)
+
+    return perp_width
+
+
+def multiply_unit_cell(cif, cutoff):
     """Resurns the multiplication factors (tuple of 3 int) for the cell vectors
     that are needed to respect: min(perpendicular_width) > threshold
     """
-    from math import cos, sin, sqrt, pi
+    from math import cos, sin, sqrt, pi, ceil
     import numpy as np
     deg2rad = pi / 180.
 
@@ -49,7 +90,6 @@ def multiply_unit_cell(cif, threshold):
     gamma = float(struct['_cell_angle_gamma']) * deg2rad
 
     # first step is computing cell parameters according to  https://en.wikipedia.org/wiki/Fractional_coordinates
-    # Note: this is the algorithm implemented in Raspa (framework.c/UnitCellBox). There also is a simpler one but it is less robust.
     v = sqrt(1 - cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 +
              2 * cos(alpha) * cos(beta) * cos(gamma))
     cell = np.zeros((3, 3))
@@ -62,9 +102,12 @@ def multiply_unit_cell(cif, threshold):
     ]
     cell = np.array(cell)
 
-    # diagonalizing the cell matrix: note that the diagonal elements are the perpendicolar widths because ay=az=bz=0
-    diag = np.diag(cell)
-    return tuple(int(i) for i in np.ceil(threshold / diag * 2.))
+    # diagonalizing the cell matrix: note that the diagonal elements are the perpendicular widths because ay=az=bz=0
+    perp_width = get_perpendicular_width(cell)
+    multipl_length = [0] * 3
+    for k in range(3):
+        multipl_length[k] = int(ceil(2 * cutoff / perp_width[k]))
+    return multipl_length[0], multipl_length[1], multipl_length[2]
 
 
 class RaspaConvergeWorkChain(WorkChain):
@@ -101,6 +144,7 @@ class RaspaConvergeWorkChain(WorkChain):
         spec.output('retrieved_parent_folder', valid_type=FolderData)
         spec.output('component_0', valid_type=ParameterData)
         spec.output('output_parameters', valid_type=ParameterData)
+        
 
     def setup(self):
         """Perform initial setup"""
@@ -163,7 +207,7 @@ class RaspaConvergeWorkChain(WorkChain):
 
     def inspect_calculation(self):
         """
-        Analyse the results of CP2K calculation and decide weather there is a
+        Analyse the results of RASPA calculation and decide weather there is a
         need to restart it. If yes, then decide exactly how to restart the
         calculation.
         """
