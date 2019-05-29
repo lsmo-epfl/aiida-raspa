@@ -11,7 +11,7 @@
     "version": "0.3.1",
     "setup_requires": ["reentry"],
     "install_requires": [
-        "aiida >= 0.9"
+        "aiida_core >= 1.0.0a1"
     ],
     "entry_points": {
         "aiida.calculations": [
@@ -27,10 +27,10 @@
     "reentry_register": true,
     "extras_require": {
 	    "pre-commit": [
-		    "pre-commit==1.11.0",
-		    "yapf==0.24.0",
-		    "prospector==1.1.5",
-		    "pylint==1.9.3"
+		    "pre-commit==1.16.1",
+		    "yapf==0.27.0",
+		    "prospector==1.1.6.2",
+		    "pylint==1.9.4"
 	    ]
     }
 }
