@@ -5,11 +5,9 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from aiida.common.extendeddicts import AttributeDict
-from aiida.work.run import submit
-from aiida.work.workchain import WorkChain, Outputs
-from aiida.orm.code import Code
-from aiida.orm.utils import CalculationFactory, DataFactory
-from aiida.work.workchain import ToContext, while_
+from aiida.engine import Outputs, submit, ToContext, while_, WorkChain
+from aiida.orm import Code
+from aiida.plugins import CalculationFactory, DataFactory
 import six
 
 # data objects
@@ -150,11 +148,11 @@ class RaspaConvergeWorkChain(WorkChain):
 
         # Reading the CutOff, compute the UnitCells expansion
         cutoff = self.ctx.parameters['GeneralSettings']['CutOff']
-        ucs = multiply_unit_cell(self.inputs.structure, cutoff*2)
+        ucs = multiply_unit_cell(self.inputs.structure, cutoff * 2)
         self.ctx.parameters['GeneralSettings'][
             'UnitCells'] = "{} {} {}".format(ucs[0], ucs[1], ucs[2])
         # use the new parameters
-        p = ParameterData(dict=self.ctx.parameters)
+        p = Dict(dict=self.ctx.parameters)
         p.store()
         self.ctx.inputs['parameters'] = p
 
