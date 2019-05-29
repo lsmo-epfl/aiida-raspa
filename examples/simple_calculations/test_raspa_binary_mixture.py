@@ -46,15 +46,14 @@ def main(codelabel, submit):
                 "ReinsertionProbability": 1.0,
                 "SwapProbability": 1.0,
                 "CreateNumberOfMolecules": 30,
-            },
-                          {
-                              "MoleculeName": "butane",
-                              "MoleculeDefinition": "TraPPE",
-                              "TranslationProbability": 1.0,
-                              "ReinsertionProbability": 1.0,
-                              "SwapProbability": 1.0,
-                              "CreateNumberOfMolecules": 30,
-                          }],
+            }, {
+                "MoleculeName": "butane",
+                "MoleculeDefinition": "TraPPE",
+                "TranslationProbability": 1.0,
+                "ReinsertionProbability": 1.0,
+                "SwapProbability": 1.0,
+                "CreateNumberOfMolecules": 30,
+            }],
         })
     calc.use_parameters(parameters)
 
