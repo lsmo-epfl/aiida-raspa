@@ -6,9 +6,9 @@ __version__ = "0.3.1"
 import re
 from math import isnan
 from aiida.parsers.parser import Parser
-from aiida.orm.data.parameter import ParameterData
+from aiida.orm import Dict
 from aiida_raspa.calculations import RaspaCalculation
-from aiida.parsers.exceptions import OutputParsingError
+from aiida.common import OutputParsingError
 
 float_base = float
 
@@ -129,7 +129,7 @@ class RaspaParser(Parser):
             raise OutputParsingError("Input calc must be a RaspaCalculation")
 
     # --------------------------------------------------------------------------
-    def parse_with_retrieved(self, retrieved):
+    def parse(self, **kwargs):
         """Receives in input a dictionary of retrieved nodes. Does all the logic here."""
         out_folder = retrieved['retrieved']
         new_nodes_list = []
@@ -229,8 +229,8 @@ class RaspaParser(Parser):
                         continue  # no need to perform further checks, propperty has been found already
                 if framework_density.match(line) is not None:
                     result_dict['framework_density'] = line.split()[2]
-                    result_dict['framework_density_units'] = line.split(
-                    )[3].translate(None, '[](){}')
+                    result_dict['framework_density_units'] = line.split()[
+                        3].translate(None, '[](){}')
 
                 elif num_of_molec.match(line) is not None:
                     break  # this stops the cycle
@@ -268,10 +268,10 @@ class RaspaParser(Parser):
                                                    to_parse[1])
             # end of the 4th parsing part
 
-        pair = (self.get_linkname_outparams(), ParameterData(dict=result_dict))
+        pair = (self.get_linkname_outparams(), Dict(dict=result_dict))
         new_nodes_list.append(pair)
         for i, item in enumerate(res_per_component):
-            pair = ('component_' + str(i), ParameterData(dict=item))
+            pair = ('component_' + str(i), Dict(dict=item))
             new_nodes_list.append(pair)
 
 
