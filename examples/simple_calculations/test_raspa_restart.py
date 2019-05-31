@@ -20,7 +20,7 @@ CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 @click.command('cli')
 @click.argument('codelabel')
-@click.option('--previous_calc', '-p', required=True, type=int, help='Previous calculation to restart from')
+@click.option('--previous_calc', '-p', required=True, type=int, help='PK of test_raspa_base.py calculation')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
 def main(codelabel, previous_calc, submit):
     """Prepare and submit restart from simple RASPA calculation."""
@@ -41,25 +41,30 @@ def main(codelabel, previous_calc, submit):
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "Framework": 0,
-                "UnitCells": "1 1 1",
                 "HeliumVoidFraction": 0.149,
                 "ExternalTemperature": 300.0,
                 "ExternalPressure": 5e5,
             },
-            "Component": [{
-                "MoleculeName": "methane",
-                "MoleculeDefinition": "TraPPE",
-                "TranslationProbability": 0.5,
-                "ReinsertionProbability": 0.5,
-                "SwapProbability": 1.0,
-                "CreateNumberOfMolecules": 0,
-            }],
+            "System": {
+                "tcc1rs": {
+                    "type": "Framework",
+                    "UnitCells": "1 1 1"
+                },
+            },
+            "Component": {
+                "methane": {
+                    "MoleculeDefinition": "TraPPE",
+                    "TranslationProbability": 0.5,
+                    "ReinsertionProbability": 0.5,
+                    "SwapProbability": 1.0,
+                    "CreateNumberOfMolecules": 0,
+                }
+            },
         })
 
-    # structure
+    # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
-    structure = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
+    framework = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
 
     # restart file
     retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
@@ -76,9 +81,11 @@ def main(codelabel, previous_calc, submit):
 
     # collecting all the inputs
     inputs = {
-        "structure": structure,
+        "framework": {
+            "tcc1rs": framework,
+        },
         "parameters": parameters,
-        "retrived_parent_folder": retrieved_parent_folder,
+        "retrieved_parent_folder": retrieved_parent_folder,
         "code": code,
         "metadata": {
             "options": options,

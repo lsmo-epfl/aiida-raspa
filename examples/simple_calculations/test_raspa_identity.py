@@ -34,37 +34,71 @@ def main(codelabel, submit):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 2000,
-                "NumberOfInitializationCycles": 2000,
-                "PrintEvery": 1000,
+                "NumberOfCycles": 600,
+                "NumberOfInitializationCycles": 0,
+                "PrintEvery": 100,
+                "ChargeMethod": "Ewald",
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
                 "HeliumVoidFraction": 0.149,
-                "ExternalTemperature": 300.0,
-                "ExternalPressure": 5e5,
                 "WriteBinaryRestartFileEvery": 200,
             },
             "System": {
-                "tcc1rs": {
+                "cu_btc": {
                     "type": "Framework",
-                    "UnitCells": "1 1 1"
+                    "UnitCells": "1 1 1",
+                    "ExternalTemperature": 300.0,
+                    "ExternalPressure": 5e5,
                 },
             },
             "Component": {
-                "methane": {
+                "CO2": {
                     "MoleculeDefinition": "TraPPE",
+                    "MolFraction": 0.15,
+                    "IdealGasRosenbluthWeight": 1.0,
                     "TranslationProbability": 0.5,
+                    "RotationProbability": 0.5,
                     "ReinsertionProbability": 0.5,
+                    "CBMCProbability": 0.5,
+                    "IdentityChangeProbability": 1.0,
+                    "IdentityChangesList": [0, 1, 2],
+                    "NumberOfIdentityChanges": 3,
                     "SwapProbability": 1.0,
                     "CreateNumberOfMolecules": 0,
-                }
+                },
+                "methane": {
+                    "MoleculeDefinition": "TraPPE",
+                    "MolFraction": 0.1,
+                    "IdealGasRosenbluthWeight": 1.0,
+                    "TranslationProbability": 0.5,
+                    "ReinsertionProbability": 0.5,
+                    "CBMCProbability": 0.5,
+                    "IdentityChangeProbability": 1.0,
+                    "IdentityChangesList": [0, 1, 2],
+                    "NumberOfIdentityChanges": 3,
+                    "SwapProbability": 1.0,
+                    "CreateNumberOfMolecules": 0,
+                },
+                "N2": {
+                    "MoleculeDefinition": "TraPPE",
+                    "MolFraction": 0.1,
+                    "IdealGasRosenbluthWeight": 1.0,
+                    "TranslationProbability": 0.5,
+                    "ReinsertionProbability": 0.5,
+                    "CBMCProbability": 0.5,
+                    "IdentityChangeProbability": 1.0,
+                    "IdentityChangesList": [0, 1, 2],
+                    "NumberOfIdentityChanges": 3,
+                    "SwapProbability": 1.0,
+                    "CreateNumberOfMolecules": 0,
+                },
             },
         })
 
     # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
-    framework = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
+    framework = CifData(file=pwd + '/test_raspa_attach_file/Cu-BTC.cif')
 
     # resources
     options = {
@@ -73,13 +107,12 @@ def main(codelabel, submit):
             "num_mpiprocs_per_machine": 1,
         },
         "max_wallclock_seconds": 1 * 30 * 60,  # 30 min
-        "withmpi": False,
     }
 
     # collecting all the inputs
     inputs = {
         "framework": {
-            "tcc1rs": framework,
+            "cu_btc": framework,
         },
         "parameters": parameters,
         "code": code,
