@@ -1,30 +1,31 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+"""Run RASPA calculation with components mixture."""
+
 from __future__ import print_function
 from __future__ import absolute_import
-import os
+import sys
 import click
 
-from aiida.common.example_helpers import test_and_get_code
-from aiida.orm import DataFactory
-
-# data objects
-CifData = DataFactory('cif')
-ParameterData = DataFactory('parameter')
-SinglefileData = DataFactory('singlefile')
+from aiida.common import NotExistent
+from aiida.engine import run
+from aiida.orm import Code, Dict
+from aiida_raspa.calculations import RaspaCalculation
 
 
 @click.command('cli')
 @click.argument('codelabel')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
 def main(codelabel, submit):
-    code = test_and_get_code(codelabel, expected_code_type='raspa')
-
-    # calc object
-    calc = code.new_calc()
+    """Prepare and submit RASPA calculation with components mixture."""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
 
     # parameters
-    parameters = ParameterData(
+    parameters = Dict(
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
@@ -46,33 +47,47 @@ def main(codelabel, submit):
                 "ReinsertionProbability": 1.0,
                 "SwapProbability": 1.0,
                 "CreateNumberOfMolecules": 30,
-            }, {
-                "MoleculeName": "butane",
-                "MoleculeDefinition": "TraPPE",
-                "TranslationProbability": 1.0,
-                "ReinsertionProbability": 1.0,
-                "SwapProbability": 1.0,
-                "CreateNumberOfMolecules": 30,
-            }],
+            },
+                          {
+                              "MoleculeName": "butane",
+                              "MoleculeDefinition": "TraPPE",
+                              "TranslationProbability": 1.0,
+                              "ReinsertionProbability": 1.0,
+                              "SwapProbability": 1.0,
+                              "CreateNumberOfMolecules": 30,
+                          }],
         })
-    calc.use_parameters(parameters)
 
     # resources
-    calc.set_max_wallclock_seconds(30 * 60)  # 30 min
-    calc.set_resources({"num_machines": 1, "num_mpiprocs_per_machine": 1})
-    calc.set_withmpi(False)
-    #calc.set_queue_name("serial")
+    options = {
+        "resources": {
+            "num_machines": 1,
+            "num_mpiprocs_per_machine": 1,
+        },
+        "max_wallclock_seconds": 1 * 30 * 60,  # 30 min
+        "withmpi": False,
+    }
+
+    # collecting all the inputs
+    inputs = {
+        "parameters": parameters,
+        "code": code,
+        "metadata": {
+            "options": options,
+            "dry_run": False,
+            "store_provenance": True,
+        }
+    }
 
     if submit:
-        calc.store_all()
-        calc.submit()
-        print(("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\
-                .format(calc.uuid,calc.dbnode.pk)))
+        run(RaspaCalculation, **inputs)
+        #print(("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\
+        #        .format(calc.uuid,calc.dbnode.pk)))
     else:
-        subfolder = calc.submit_test()[0]
-        path = os.path.relpath(subfolder.abspath)
+        inputs["metadata"]["dry_run"] = True
+        inputs["metadata"]["store_provenance"] = False
+        run(RaspaCalculation, **inputs)
         print("submission test successful")
-        print(("Find remote folder in {}".format(path)))
         print("In order to actually submit, add '--submit'")
 
 
