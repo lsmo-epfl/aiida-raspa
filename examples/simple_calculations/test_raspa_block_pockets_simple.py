@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""Run RASPA calculation to compute Henry coefficient."""
-
+"""Run RASPA calculation with blocked pockets."""
 from __future__ import print_function
 from __future__ import absolute_import
 import os
@@ -10,8 +9,8 @@ import click
 
 from aiida.common import NotExistent
 from aiida.engine import run
+from aiida.orm import Code, Dict, SinglefileData
 from aiida.plugins import DataFactory
-from aiida.orm import Code, Dict
 from aiida_raspa.calculations import RaspaCalculation
 
 # data objects
@@ -22,39 +21,51 @@ CifData = DataFactory('cif')  # pylint: disable=invalid-name
 @click.argument('codelabel')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
 def main(codelabel, submit):
-    """Prepare and submit simple RASPA calculation to compute Henry coefficient."""
+    """Prepare and submit RASPA calculation with blocked pockets."""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
         print("The code '{}' does not exist".format(codelabel))
         sys.exit(1)
-
     # parameters
     parameters = Dict(
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
                 "NumberOfCycles": 2000,
+                "NumberOfInitializationCycles": 2000,
                 "PrintEvery": 1000,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "Framework": 0,
-                "UnitCells": "1 1 1",
                 "HeliumVoidFraction": 0.149,
                 "ExternalTemperature": 300.0,
+                "ExternalPressure": 5e5,
             },
-            "Component": [{
-                "MoleculeName": "methane",
-                "MoleculeDefinition": "TraPPE",
-                "WidomProbability": 1.0,
-                "CreateNumberOfMolecules": 0,
-            }],
+            "System": {
+                "tcc1rs": {
+                    "type": "Framework",
+                    "UnitCells": "1 1 1"
+                }
+            },
+            "Component": {
+                "methane": {
+                    "MoleculeDefinition": "TraPPE",
+                    "TranslationProbability": 0.5,
+                    "ReinsertionProbability": 0.5,
+                    "SwapProbability": 1.0,
+                    "CreateNumberOfMolecules": 0,
+                    "BlockPocketsFileName": "block_tcc1rs_methane",
+                }
+            },
         })
 
-    # structure
+    # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
-    structure = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
+    framework = CifData(file=os.path.join(pwd, 'test_raspa_attach_file', 'TCC1RS.cif'))
+
+    # block pocket
+    block_pocket_node = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'block_pocket.block')).store()
 
     # resources
     options = {
@@ -68,8 +79,13 @@ def main(codelabel, submit):
 
     # collecting all the inputs
     inputs = {
-        "structure": structure,
+        "framework": {
+            "tcc1rs": framework,
+        },
         "parameters": parameters,
+        "block_pocket": {
+            "block_tcc1rs_methane": block_pocket_node,
+        },
         "code": code,
         "metadata": {
             "options": options,

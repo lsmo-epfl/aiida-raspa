@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""Run simple RASPA calculation."""
-
+"""Run RASPA calculation with blocked pockets."""
 from __future__ import print_function
 from __future__ import absolute_import
 import os
@@ -10,7 +9,7 @@ import click
 
 from aiida.common import NotExistent
 from aiida.engine import run
-from aiida.orm import Code, Dict
+from aiida.orm import Code, Dict, SinglefileData
 from aiida.plugins import DataFactory
 from aiida_raspa.calculations import RaspaCalculation
 
@@ -22,13 +21,12 @@ CifData = DataFactory('cif')  # pylint: disable=invalid-name
 @click.argument('codelabel')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
 def main(codelabel, submit):
-    """Prepare and submit simple RASPA calculation."""
+    """Prepare and submit RASPA calculation with blocked pockets."""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
         print("The code '{}' does not exist".format(codelabel))
         sys.exit(1)
-
     # parameters
     parameters = Dict(
         dict={
@@ -38,18 +36,25 @@ def main(codelabel, submit):
                 "NumberOfInitializationCycles": 2000,
                 "PrintEvery": 1000,
                 "Forcefield": "GenericMOFs",
+                "RemoveAtomNumberCodeFromLabel": True,
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "HeliumVoidFraction": 0.149,
-                "ExternalTemperature": 300.0,
-                "ExternalPressure": 5e5,
-                "WriteBinaryRestartFileEvery": 200,
             },
             "System": {
-                "tcc1rs": {
+                "irmof_1": {
                     "type": "Framework",
-                    "UnitCells": "1 1 1"
+                    "UnitCells": "1 1 1",
+                    "HeliumVoidFraction": 0.149,
+                    "ExternalTemperature": 300.0,
+                    "ExternalPressure": 1e5,
                 },
+                "irmof_10": {
+                    "type": "Framework",
+                    "UnitCells": "1 1 1",
+                    "HeliumVoidFraction": 0.149,
+                    "ExternalTemperature": 300.0,
+                    "ExternalPressure": 1e5,
+                }
             },
             "Component": {
                 "methane": {
@@ -57,14 +62,40 @@ def main(codelabel, submit):
                     "TranslationProbability": 0.5,
                     "ReinsertionProbability": 0.5,
                     "SwapProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
-                }
+                    "CreateNumberOfMolecules": {
+                        "irmof_1": 1,
+                        "irmof_10": 2,
+                    },
+                    "BlockPocketsFileName": {
+                        "irmof_1": "irmof_1_4",
+                        "irmof_10": "irmof_1_5",
+                    },
+                },
+                "xenon": {
+                    "MoleculeDefinition": "TraPPE",
+                    "TranslationProbability": 0.5,
+                    "ReinsertionProbability": 0.5,
+                    "SwapProbability": 1.0,
+                    "CreateNumberOfMolecules": {
+                        "irmof_1": 3,
+                        "irmof_10": 4,
+                    },
+                    "BlockPocketsFileName": {
+                        "irmof_1": "irmof_1_5",
+                        "irmof_10": "irmof_1_4",
+                    },
+                },
             },
         })
 
     # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
-    framework = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
+    framework_1 = CifData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-1.cif'))
+    framework_10 = CifData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-10.cif'))
+
+    # block pocket
+    block_pocket_1_4 = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-1-4.block')).store()
+    block_pocket_1_5 = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-1-5.block')).store()
 
     # resources
     options = {
@@ -79,9 +110,14 @@ def main(codelabel, submit):
     # collecting all the inputs
     inputs = {
         "framework": {
-            "tcc1rs": framework,
+            "irmof_1": framework_1,
+            "irmof_10": framework_10,
         },
         "parameters": parameters,
+        "block_pocket": {
+            "irmof_1_4": block_pocket_1_4,
+            "irmof_1_5": block_pocket_1_5,
+        },
         "code": code,
         "metadata": {
             "options": options,
