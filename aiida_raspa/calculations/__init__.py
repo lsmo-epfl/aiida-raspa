@@ -39,7 +39,7 @@ class RaspaCalculation(CalcJob):
         spec.input('parent_calc_folder', valid_type=RemoteData, required=False, help='Remote folder used for restarts')
         spec.input('block_component_0', valid_type=SinglefileData, required=False, help='Zeo++ block file')
         spec.input(
-            'retrived_parent_folder', valid_type=FolderData, required=False, help='For restarting the calculation')
+            'retrieved_parent_folder', valid_type=FolderData, required=False, help='For restarting the calculation')
         spec.input('file', valid_type=SinglefileData, required=False, help='additiona input file')
 
         spec.input('metadata.options.parser_name', valid_type=six.string_types, default=cls.DEFAULT_PARSER, non_db=True)
