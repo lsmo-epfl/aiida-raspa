@@ -30,7 +30,8 @@
 		    "pre-commit==1.16.1",
 		    "yapf==0.27.0",
 		    "prospector==1.1.6.2",
-		    "pylint==1.9.4"
+                    "pylint==1.9.4; python_version<'3.0'",
+                    "pylint==2.2.2; python_version>='3.0'"
 	    ]
     }
 }
