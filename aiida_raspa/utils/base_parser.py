@@ -114,6 +114,7 @@ def parse_lines_with_component(res_components, components, line, prop):
 def parse_base_output(output_abs_path, ncomponents):
     """Parse RASPA output file"""
 
+    warnings = []
     res_per_component = []
     for i in range(ncomponents):
         res_per_component.append({})
@@ -213,9 +214,9 @@ def parse_base_output(output_abs_path, ncomponents):
                     parse_lines_with_component(res_per_component, component_names, line, to_parse[1])
         # end of the 4th parsing part
 
-    return_dictionary = {'output_parameters': result_dict}
+    return_dictionary = {"general": result_dict, "components": {}}
 
     for name, value in zip(component_names, res_per_component):
-        return_dictionary[name] = value
+        return_dictionary["components"][name] = value
 
-    return return_dictionary
+    return return_dictionary, warnings

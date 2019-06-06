@@ -6,7 +6,7 @@ from shutil import copyfile, copytree
 import six
 from six.moves import map, range
 
-from aiida.orm import Dict, FolderData, RemoteData, SinglefileData
+from aiida.orm import Dict, FolderData, List, RemoteData, SinglefileData
 from aiida.common import CalcInfo, CodeInfo, InputValidationError
 #from aiida.cmdline.utils import echo
 from aiida.engine import CalcJob
@@ -24,7 +24,7 @@ class RaspaCalculation(CalcJob):
     """
     # Defaults
     INPUT_FILE = 'simulation.input'
-    OUTPUT_FILE = 'Output/System_0/*'
+    OUTPUT_FOLDER = 'Output'
     RESTART_FOLDER = 'Restart'
     PROJECT_NAME = 'aiida'
     DEFAULT_PARSER = 'raspa'
@@ -48,12 +48,12 @@ class RaspaCalculation(CalcJob):
 
         # Output parameters
         spec.output('output_parameters', valid_type=Dict, required=True, help="The results of calculation")
-        spec.output_namespace(
-            'component',
-            valid_type=Dict,
-            required=True,
-            dynamic=True,
-            help="The results of calculation on per component base")
+        spec.output('warnings', valid_type=List, required=False)
+
+        # Exit codes
+        spec.exit_code(
+            100, 'ERROR_NO_RETRIEVED_FOLDER', message='The retrieved folder data node could not be accessed.')
+        spec.exit_code(101, 'ERROR_NO_OUTPUT_FILE', message='The retrieved folder does not contain an output file.')
 
         # Default output node
         spec.default_output_node = 'output_parameters'
@@ -125,7 +125,7 @@ class RaspaCalculation(CalcJob):
         # continue the previous calculation starting from the binary restart
         calcinfo.remote_copy_list = remote_copy_list
 
-        calcinfo.retrieve_list = [[self.OUTPUT_FILE, '.', 0], [self.RESTART_FOLDER, '.', 0]]
+        calcinfo.retrieve_list = [self.OUTPUT_FOLDER, self.RESTART_FOLDER]
         calcinfo.retrieve_list += settings.pop('additional_retrieve_list', [])
 
         # check for left over settings

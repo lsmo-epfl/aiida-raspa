@@ -6,7 +6,7 @@ from six.moves import range
 
 from aiida.common import NotExistent, OutputParsingError
 from aiida.engine import ExitCode
-from aiida.orm import Dict
+from aiida.orm import Dict, List
 from aiida.parsers.parser import Parser
 from aiida_raspa.utils import parse_base_output
 
@@ -24,21 +24,35 @@ class RaspaParser(Parser):
             out_folder = self.retrieved
         except NotExistent:
             return self.exit_codes.ERROR_NO_RETRIEVED_FOLDER
+        output_folder_name = self.node.process_class.OUTPUT_FOLDER
 
-        for ftmp in out_folder._repository.list_object_names():  # pylint: disable=protected-access
-            if ftmp.endswith('.data'):
-                fname = ftmp
-                break
-        else:
-            raise OutputParsingError("Calculation did not produce an output file. Please make sure that it run "
-                                     "correctly")
+        if output_folder_name not in out_folder._repository.list_object_names():  # pylint: disable=protected-access
+            return self.exit_codes.ERROR_NO_OUTPUT_FILE
 
+        output_parameters = {}
+        warnings = []
         ncomponents = len(self.node.inputs.parameters.get_dict()['Component'])
+        for system in out_folder._repository.list_object_names(output_folder_name):  # pylint: disable=protected-access
+            # decide the name for the system
+            fname = out_folder._repository.list_object_names(os.path.join(output_folder_name, system))[0]  # pylint: disable=protected-access
+            system_id = system.replace("System_", "")
+            system_name = '_'.join(fname.split('_')[1:-3])
+            if system_name == 'Box':
+                system_name += system_id
 
-        # self.logger.info("list of components: {}".format(component_names))
-        output_abs_path = os.path.join(out_folder._repository._get_base_folder().abspath, fname)  # pylint: disable=protected-access
-        parsed_parameters = parse_base_output(output_abs_path, ncomponents)
-        self.out("output_parameters", Dict(dict=parsed_parameters.pop("output_parameters")))
-        for key, value in parsed_parameters.items():
-            self.out("component.{}".format(key), Dict(dict=value))
+            # get absolute path of the output file
+            output_abs_path = os.path.join(
+                out_folder._repository._get_base_folder().abspath,  # pylint: disable=protected-access
+                self.node.process_class.OUTPUT_FOLDER,
+                system,
+                fname)
+
+            # parse output parameters and warnings
+            parsed_parameters, parsed_warnings = parse_base_output(output_abs_path, ncomponents)
+            output_parameters[system_name] = parsed_parameters
+            warnings += parsed_warnings
+
+        self.out("output_parameters", Dict(dict=output_parameters))
+        self.out("warnings", List(list=warnings))
+
         return ExitCode(0)
