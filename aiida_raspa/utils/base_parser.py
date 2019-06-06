@@ -111,7 +111,7 @@ def parse_lines_with_component(res_components, components, line, prop):
 
 
 # pylint: disable=too-many-locals, too-many-arguments, too-many-statements, too-many-branches
-def parse_base_output(output_abs_path, ncomponents):
+def parse_base_output(output_abs_path, system_name, ncomponents):
     """Parse RASPA output file"""
 
     warnings = []
@@ -219,4 +219,8 @@ def parse_base_output(output_abs_path, ncomponents):
     for name, value in zip(component_names, res_per_component):
         return_dictionary["components"][name] = value
 
+    with open(output_abs_path, "r") as fobj:
+        for line in fobj:
+            if "WARNING" in line:
+                warnings.append((system_name, line))
     return return_dictionary, warnings
