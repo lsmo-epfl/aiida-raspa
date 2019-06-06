@@ -55,9 +55,7 @@ def main(codelabel, submit):
                     "ReinsertionProbability": 0.5,
                     "SwapProbability": 1.0,
                     "CreateNumberOfMolecules": 0,
-                    "BlockPocketsFileName": {
-                        "tcc1rs": "block_pocket"
-                    }
+                    "BlockPocketsFileName": "block_tcc1rs_methane",
                 }
             },
         })
@@ -86,7 +84,7 @@ def main(codelabel, submit):
         },
         "parameters": parameters,
         "block_pocket": {
-            "block_1": block_pocket_node,
+            "block_tcc1rs_methane": block_pocket_node,
         },
         "code": code,
         "metadata": {

@@ -119,8 +119,8 @@ class RaspaCalculation(CalcJob):
 
         # block pockets
         if 'block_pocket' in self.inputs:
-            for fobj in self.inputs.block_pocket.values():
-                calcinfo.local_copy_list.append((fobj.uuid, fobj.filename, fobj.filename))
+            for name, fobj in self.inputs.block_pocket.items():
+                calcinfo.local_copy_list.append((fobj.uuid, fobj.filename, name + '.block'))
 
         # continue the previous calculation starting from the binary restart
         calcinfo.remote_copy_list = remote_copy_list
