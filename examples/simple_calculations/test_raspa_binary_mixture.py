@@ -35,27 +35,33 @@ def main(codelabel, submit):
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "Box": 0,
-                "BoxLengths": "25 25 25",
                 "ExternalTemperature": 300.0,
                 "ExternalPressure": 5e5,
             },
-            "Component": [{
-                "MoleculeName": "propane",
-                "MoleculeDefinition": "TraPPE",
-                "TranslationProbability": 1.0,
-                "ReinsertionProbability": 1.0,
-                "SwapProbability": 1.0,
-                "CreateNumberOfMolecules": 30,
+            "System": {
+                "box0": {
+                    "type": "Box",
+                    "BoxLengths": "25 25 25",
+                },
             },
-                          {
-                              "MoleculeName": "butane",
-                              "MoleculeDefinition": "TraPPE",
-                              "TranslationProbability": 1.0,
-                              "ReinsertionProbability": 1.0,
-                              "SwapProbability": 1.0,
-                              "CreateNumberOfMolecules": 30,
-                          }],
+            "Component": {
+                "propane": {
+                    "MoleculeName": "propane",
+                    "MoleculeDefinition": "TraPPE",
+                    "TranslationProbability": 1.0,
+                    "ReinsertionProbability": 1.0,
+                    "SwapProbability": 1.0,
+                    "CreateNumberOfMolecules": 30,
+                },
+                "butane": {
+                    "MoleculeName": "butane",
+                    "MoleculeDefinition": "TraPPE",
+                    "TranslationProbability": 1.0,
+                    "ReinsertionProbability": 1.0,
+                    "SwapProbability": 1.0,
+                    "CreateNumberOfMolecules": 30,
+                },
+            },
         })
 
     # resources

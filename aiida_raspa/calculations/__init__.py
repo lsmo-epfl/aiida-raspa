@@ -1,18 +1,21 @@
 # -*- coding: utf-8 -*-
 """Raspa input plugin."""
 from __future__ import absolute_import
-from shutil import copyfile
+import os
+from shutil import copyfile, copytree
 import six
 from six.moves import map, range
 
 from aiida.orm import Dict, FolderData, RemoteData, SinglefileData
 from aiida.common import CalcInfo, CodeInfo, InputValidationError
+#from aiida.cmdline.utils import echo
 from aiida.engine import CalcJob
 from aiida.plugins import DataFactory
 
+from aiida_raspa.utils import RaspaInput
+
 # data objects
 CifData = DataFactory('cif')  # pylint: disable=invalid-name
-StructureData = DataFactory('structure')  # pylint: disable=invalid-name
 
 
 class RaspaCalculation(CalcJob):
@@ -22,9 +25,8 @@ class RaspaCalculation(CalcJob):
     # Defaults
     INPUT_FILE = 'simulation.input'
     OUTPUT_FILE = 'Output/System_0/*'
-    RESTART_FILE = 'Restart/System_0/restart*'
+    RESTART_FOLDER = 'Restart'
     PROJECT_NAME = 'aiida'
-    COORDS_FILE = 'framework.cif'
     DEFAULT_PARSER = 'raspa'
 
     @classmethod
@@ -33,20 +35,27 @@ class RaspaCalculation(CalcJob):
 
         #Input parameters
         spec.input('parameters', valid_type=Dict, required=True, help='Input parameters')
-        spec.input('structure', valid_type=CifData, required=False, help='Input structure')
-        # do `settings` need to be of type `Dict`? Would dict also work?
+        spec.input_namespace('framework', valid_type=CifData, required=False, dynamic=True, help='Input framework(s)')
+        spec.input_namespace(
+            'block_pocket', valid_type=SinglefileData, required=False, dynamic=True, help='Zeo++ block file')
+        spec.input_namespace('file', valid_type=SinglefileData, required=False, help='additiona input file')
+        # TODO: understand do `settings` need to be of type `Dict`? Would dict also work?
         spec.input('settings', valid_type=Dict, required=False, help='Additional input parameters')
-        spec.input('parent_calc_folder', valid_type=RemoteData, required=False, help='Remote folder used for restarts')
-        spec.input('block_component_0', valid_type=SinglefileData, required=False, help='Zeo++ block file')
+        spec.input('parent_folder', valid_type=RemoteData, required=False, help='Remote folder used for restarts')
         spec.input(
             'retrieved_parent_folder', valid_type=FolderData, required=False, help='For restarting the calculation')
-        spec.input('file', valid_type=SinglefileData, required=False, help='additiona input file')
-
         spec.input('metadata.options.parser_name', valid_type=six.string_types, default=cls.DEFAULT_PARSER, non_db=True)
 
         # Output parameters
-        spec.outputs.dynamic = True
-        spec.output('output_parameters', valid_type=Dict, required=True, help='The results of calculation')
+        spec.output('output_parameters', valid_type=Dict, required=True, help="The results of calculation")
+        spec.output_namespace(
+            'component',
+            valid_type=Dict,
+            required=True,
+            dynamic=True,
+            help="The results of calculation on per component base")
+
+        # Default output node
         spec.default_output_node = 'output_parameters'
 
     # --------------------------------------------------------------------------
@@ -62,52 +71,25 @@ class RaspaCalculation(CalcJob):
 
         # handle input parameters
         parameters = self.inputs.parameters.get_dict()
-        if 'FrameworkName' in parameters['GeneralSettings']:
-            raise InputValidationError('You should not provide "FrameworkName"'
-                                       ' as an input parameter. It will be generated automatically'
-                                       ' by AiiDA')
 
-        # handle input structure
-        if 'structure' in self.inputs:
-            self.inputs.structure.export(folder.get_abs_path(self.COORDS_FILE), fileformat='cif')
-            parameters['GeneralSettings']['Framework'] = '0'
-            parameters['GeneralSettings']['FrameworkName'] = 'framework'
+        # handle framework(s) and/or box(es)
+        if "System" in parameters:
+            self._handle_system_section(parameters, folder)
 
         # handle restart
-        if 'restart_folder' in self.inputs:
-            self._create_restart(folder)
+        if 'retrieved_parent_folder' in self.inputs:
+            self._handle_retrieved_parent_folder(parameters, folder)
+
+        # handle binary restart
+        remote_copy_list = []
+        if 'parent_folder' in self.inputs:
+            self._handle_parent_folder(parameters, remote_copy_list)
 
         # Get settings
         if 'setting' in self.inputs:
             settings = self.inputs.settings.get_dict()
         else:
             settings = {}
-
-        # handle block pockets
-        # This part needs to be reformulated.
-        # for i, block_pocket in enumerate('block_pockets'):
-        #     if block_pocket:
-        #         parameters_dict['Component'][i][
-        #             'BlockPocketsFileName'] = 'component_{}'.format(i)
-        #         parameters_dict['Component'][i]['BlockPockets'] = 'yes'
-        #         copyfile(
-        #             block_pocket.get_file_abs_path(),
-        #             folder.get_subfolder(".").get_abs_path(
-        #                 'component_{}.block'.format(i)))
-
-        # block_pockets = []
-        # for i in range(n_components):
-        #     bp = inputdict.pop('block_component_{}'.format(i), None)
-        #     if bp:
-        #         if isinstance(bp, SinglefileData):
-        #             block_pockets.append(bp)
-        #         else:
-        #             raise InputValidationError(
-        #                 "Block pockets should be either None, or of the type SinglefileData."
-        #                 "You provided the object {} of type {}".format(
-        #                     bp, type(bp)))
-        #     else:
-        #         block_pockets.append(None)
 
         # write raspa input file
         inp = RaspaInput(parameters)
@@ -130,13 +112,20 @@ class RaspaCalculation(CalcJob):
 
         # file lists
         calcinfo.remote_symlink_list = []
+        calcinfo.local_copy_list = []
         if 'file' in self.inputs:
-            calcinfo.local_copy_list = []
             for fobj in self.inputs.file.values():
                 calcinfo.local_copy_list.append((fobj.uuid, fobj.filename, fobj.filename))
 
-        calcinfo.remote_copy_list = []
-        calcinfo.retrieve_list = [[self.OUTPUT_FILE, '.', 0], [self.RESTART_FILE, '.', 0]]
+        # block pockets
+        if 'block_pocket' in self.inputs:
+            for fobj in self.inputs.block_pocket.values():
+                calcinfo.local_copy_list.append((fobj.uuid, fobj.filename, fobj.filename))
+
+        # continue the previous calculation starting from the binary restart
+        calcinfo.remote_copy_list = remote_copy_list
+
+        calcinfo.retrieve_list = [[self.OUTPUT_FILE, '.', 0], [self.RESTART_FOLDER, '.', 0]]
         calcinfo.retrieve_list += settings.pop('additional_retrieve_list', [])
 
         # check for left over settings
@@ -147,73 +136,30 @@ class RaspaCalculation(CalcJob):
 
         return calcinfo
 
-    # --------------------------------------------------------------------------
-    def _create_restart(self, folder):
-        """Extract restart information from the previous RASPA calculation"""
-        restart_folder = self.inputs.restart_folder
-        if not isinstance(restart_folder, FolderData):
-            raise InputValidationError("retrieved parent folder is of type {}, "
-                                       "but not FolderData".format(type(restart_folder)))
+    def _handle_system_section(self, parameters, folder):
+        """Handle framework(s) and/or box(es)."""
+        for name, sparams in parameters["System"].items():
+            if sparams["type"] == "Framework":
+                try:
+                    self.inputs.framework[name].export(folder.get_abs_path(name + '.cif'), fileformat='cif')
+                except KeyError:
+                    raise InputValidationError(
+                        "You specified '{}' framework in the input dictionary, but did not provide the input "
+                        "framework with the same name".format(name))
 
-        for fname in restart_folder.get_folder_list():
-            if "restart" in fname:
-                content = restart_folder.get_file_content(fname)
-                break
-        else:
+    def _handle_retrieved_parent_folder(self, parameters, folder):
+        """Enable restart from the retrieved folder."""
+        if "Restart" not in self.inputs.retrieved_parent_folder._repository.list_object_names():  # pylint: disable=protected-access
             raise InputValidationError("Restart was requested but the restart "
-                                       "file was not found in the previos calculation.")
+                                       "folder was not found in the previos calculation.")
+        copytree(
+            os.path.join(self.inputs.retrieved_parent_folder._repository._get_base_folder().abspath, "Restart"),  # pylint: disable=protected-access
+            folder.get_abs_path("RestartInitial"))
+        parameters['GeneralSettings']['RestartFile'] = True
 
-        genset = self.inputs.parameters.get_dict()['GeneralSettings']
-        (n_x, n_y, n_z) = tuple(map(int, genset['UnitCells'].split()))
-        restart_fname = "restart_%s_%d.%d.%d_%lf_%lg" % ("framework", n_x, n_y, n_z, genset['ExternalTemperature'],
-                                                         genset['ExternalPressure'])
-
-        restart_fname = folder.get_subfolder('RestartInitial/System_0', create=True).get_abs_path(restart_fname)
-        with open(restart_fname, "w") as fobj:
-            fobj.write(content)
-
-        self.input['GeneralSettings']['RestartFile'] = True
-
-
-# ==============================================================================
-class RaspaInput:
-    """Convert input dictionary into input file"""
-
-    def __init__(self, params):
-        self.params = params
-
-    # --------------------------------------------------------------------------
-    def render(self):
-        """Perform conversion"""
-        output = ["!!! Generated by AiiDA !!!"]
-        section = self.params.pop("GeneralSettings")
-        self._render_section(output, section)
-
-        section = self.params.pop("Component")
-        for i, molec in enumerate(section):
-            output.append('Component %d MoleculeName %s' % (i, molec.pop("MoleculeName")))
-            self._render_section(output, molec, indent=3)
-        return "\n".join(output)
-
-    # --------------------------------------------------------------------------
-    @staticmethod
-    def _render_section(output, params, indent=0):
-        """
-        It takes a dictionary and recurses through.
-
-        For key-value pair it checks whether the value is a dictionary
-        and prepends the key with &
-        It passes the valued to the same function, increasing the indentation
-        If the value is a list, I assume that this is something the user
-        wants to store repetitively
-        """
-        #        output.append("enter")
-        #        output.append("This what comes:" + str(params))
-        for key, val in sorted(params.items()):
-            if isinstance(val, list):
-                output.append('{}{} {}'.format(' ' * indent, key, ' '.join(str(p) for p in val)))
-            elif isinstance(val, bool):
-                val_str = 'yes' if val else 'no'
-                output.append('{}{} {}'.format(' ' * indent, key, val_str))
-            else:
-                output.append('{}{} {}'.format(' ' * indent, key, val))
+    def _handle_parent_folder(self, parameters, remote_copy_list):
+        """Enable binary restart from the remote folder."""
+        remote_copy_list.append((self.inputs.parent_folder.computer.uuid,
+                                 os.path.join(self.inputs.parent_folder.get_remote_path(), 'CrashRestart'),
+                                 'CrashRestart'))
+        parameters['GeneralSettings']['ContinueAfterCrash'] = True

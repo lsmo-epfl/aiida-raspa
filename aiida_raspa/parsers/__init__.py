@@ -32,14 +32,13 @@ class RaspaParser(Parser):
         else:
             raise OutputParsingError("Calculation did not produce an output file. Please make sure that it run "
                                      "correctly")
-        inp_params = self.node.inputs.parameters.get_dict()
-        ncomponents = len(inp_params['Component'])
-        component_names = []
-        for i in range(ncomponents):
-            component_names.append(inp_params['Component'][i]['MoleculeName'])
+
+        ncomponents = len(self.node.inputs.parameters.get_dict()['Component'])
 
         # self.logger.info("list of components: {}".format(component_names))
         output_abs_path = os.path.join(out_folder._repository._get_base_folder().abspath, fname)  # pylint: disable=protected-access
-        for key, value in parse_base_output(output_abs_path, ncomponents, component_names).items():
-            self.out(key, Dict(dict=value))
+        parsed_parameters = parse_base_output(output_abs_path, ncomponents)
+        self.out("output_parameters", Dict(dict=parsed_parameters.pop("output_parameters")))
+        for key, value in parsed_parameters.items():
+            self.out("component.{}".format(key), Dict(dict=value))
         return ExitCode(0)

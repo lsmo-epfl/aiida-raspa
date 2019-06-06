@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 """Basic raspa output parser."""
-
 from __future__ import absolute_import
+from __future__ import print_function
 import re
 
-from math import isnan
+from math import isnan, isinf
 from six.moves import range
+from six.moves import zip
 
 float_base = float  # pylint: disable=invalid-name
 
 
 def float(number):  # pylint: disable=redefined-builtin
     number = float_base(number)
-    return number if not isnan(number) else None
+    return number if not any((isnan(number), isinf(number))) else None
 
 
 KELVIN_TO_KJ_PER_MOL = float(8.314464919 / 1000.0)  #exactly the same as Raspa
@@ -110,7 +111,7 @@ def parse_lines_with_component(res_components, components, line, prop):
 
 
 # pylint: disable=too-many-locals, too-many-arguments, too-many-statements, too-many-branches
-def parse_base_output(output_abs_path, ncomponents, component_names):
+def parse_base_output(output_abs_path, ncomponents):
     """Parse RASPA output file"""
 
     res_per_component = []
@@ -124,8 +125,12 @@ def parse_base_output(output_abs_path, ncomponents, component_names):
     with open(output_abs_path, "r") as fobj:
         # 1st parsing part
         icomponent = 0
+        component_names = []
         res_cmp = res_per_component[0]
         for line in fobj:
+            if "Component" in line and "(Adsorbate molecule)" in line:
+                print(line)
+                component_names.append(line.split()[2][1:-1])
             # TODO maybe change for parse_line?
             if "Conversion factor molecules/unit cell -> mol/kg:" in line:
                 res_cmp['conversion_factor_molec_uc_to_mol_kg'] = float(line.split()[6])
@@ -210,7 +215,7 @@ def parse_base_output(output_abs_path, ncomponents, component_names):
 
     return_dictionary = {'output_parameters': result_dict}
 
-    for i, item in enumerate(res_per_component):
-        return_dictionary['component_' + str(i)] = item
+    for name, value in zip(component_names, res_per_component):
+        return_dictionary[name] = value
 
     return return_dictionary

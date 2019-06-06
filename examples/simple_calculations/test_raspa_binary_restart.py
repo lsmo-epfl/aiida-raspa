@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""Run RASPA calculation to compute Henry coefficient."""
+"""Restart from simple RASPA calculation."""
 
 from __future__ import print_function
 from __future__ import absolute_import
@@ -10,8 +10,8 @@ import click
 
 from aiida.common import NotExistent
 from aiida.engine import run
+from aiida.orm import Code, Dict, load_node
 from aiida.plugins import DataFactory
-from aiida.orm import Code, Dict
 from aiida_raspa.calculations import RaspaCalculation
 
 # data objects
@@ -20,9 +20,10 @@ CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 @click.command('cli')
 @click.argument('codelabel')
+@click.option('--previous_calc', '-p', required=True, type=int, help='PK of test_raspa_base.py calculation')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
-    """Prepare and submit simple RASPA calculation to compute Henry coefficient."""
+def main(codelabel, previous_calc, submit):
+    """Prepare and submit restart from simple RASPA calculation."""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
@@ -35,26 +36,38 @@ def main(codelabel, submit):
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
                 "NumberOfCycles": 2000,
+                "NumberOfInitializationCycles": 2000,
                 "PrintEvery": 1000,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "Framework": 0,
-                "UnitCells": "1 1 1",
                 "HeliumVoidFraction": 0.149,
                 "ExternalTemperature": 300.0,
+                "ExternalPressure": 5e5,
             },
-            "Component": [{
-                "MoleculeName": "methane",
-                "MoleculeDefinition": "TraPPE",
-                "WidomProbability": 1.0,
-                "CreateNumberOfMolecules": 0,
-            }],
+            "System": {
+                "tcc1rs": {
+                    "type": "Framework",
+                    "UnitCells": "1 1 1"
+                },
+            },
+            "Component": {
+                "methane": {
+                    "MoleculeDefinition": "TraPPE",
+                    "TranslationProbability": 0.5,
+                    "ReinsertionProbability": 0.5,
+                    "SwapProbability": 1.0,
+                    "CreateNumberOfMolecules": 0,
+                }
+            },
         })
 
-    # structure
+    # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
-    structure = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
+    framework = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
+
+    # restart file
+    parent_folder = load_node(previous_calc).outputs.remote_folder
 
     # resources
     options = {
@@ -68,8 +81,11 @@ def main(codelabel, submit):
 
     # collecting all the inputs
     inputs = {
-        "structure": structure,
+        "framework": {
+            "tcc1rs": framework,
+        },
         "parameters": parameters,
+        "parent_folder": parent_folder,
         "code": code,
         "metadata": {
             "options": options,
@@ -77,7 +93,6 @@ def main(codelabel, submit):
             "store_provenance": True,
         }
     }
-
     if submit:
         run(RaspaCalculation, **inputs)
         #print(("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\

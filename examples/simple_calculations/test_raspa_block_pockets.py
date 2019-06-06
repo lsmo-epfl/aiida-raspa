@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""Run simple RASPA calculation."""
-
+"""Run RASPA calculation with blocked pockets."""
 from __future__ import print_function
 from __future__ import absolute_import
 import os
@@ -10,7 +9,7 @@ import click
 
 from aiida.common import NotExistent
 from aiida.engine import run
-from aiida.orm import Code, Dict
+from aiida.orm import Code, Dict, SinglefileData
 from aiida.plugins import DataFactory
 from aiida_raspa.calculations import RaspaCalculation
 
@@ -22,13 +21,12 @@ CifData = DataFactory('cif')  # pylint: disable=invalid-name
 @click.argument('codelabel')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
 def main(codelabel, submit):
-    """Prepare and submit simple RASPA calculation."""
+    """Prepare and submit RASPA calculation with blocked pockets."""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
         print("The code '{}' does not exist".format(codelabel))
         sys.exit(1)
-
     # parameters
     parameters = Dict(
         dict={
@@ -43,13 +41,12 @@ def main(codelabel, submit):
                 "HeliumVoidFraction": 0.149,
                 "ExternalTemperature": 300.0,
                 "ExternalPressure": 5e5,
-                "WriteBinaryRestartFileEvery": 200,
             },
             "System": {
                 "tcc1rs": {
                     "type": "Framework",
                     "UnitCells": "1 1 1"
-                },
+                }
             },
             "Component": {
                 "methane": {
@@ -58,13 +55,19 @@ def main(codelabel, submit):
                     "ReinsertionProbability": 0.5,
                     "SwapProbability": 1.0,
                     "CreateNumberOfMolecules": 0,
+                    "BlockPocketsFileName": {
+                        "tcc1rs": "block_pocket"
+                    }
                 }
             },
         })
 
     # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
-    framework = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
+    framework = CifData(file=os.path.join(pwd, 'test_raspa_attach_file', 'TCC1RS.cif'))
+
+    # block pocket
+    block_pocket_node = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'block_pocket.block'))
 
     # resources
     options = {
@@ -82,6 +85,9 @@ def main(codelabel, submit):
             "tcc1rs": framework,
         },
         "parameters": parameters,
+        "block_pocket": {
+            "block_1": block_pocket_node,
+        },
         "code": code,
         "metadata": {
             "options": options,
