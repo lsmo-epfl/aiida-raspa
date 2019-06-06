@@ -2,7 +2,7 @@
 
 # aiida-raspa
 
-[AiiDA](https://www.aiida.net) plugin for [RASPA2](https://github.com/numat/RASPA2).
+[AiiDA](http://www.aiida.net/) plugin for [RASPA2](https://github.com/iRASPA/RASPA2).
 
 ## Installation
 
