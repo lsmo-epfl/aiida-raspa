@@ -65,7 +65,7 @@ def main(codelabel, submit):
     framework = CifData(file=os.path.join(pwd, 'test_raspa_attach_file', 'TCC1RS.cif'))
 
     # block pocket
-    block_pocket_node = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'block_pocket.block'))
+    block_pocket_node = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'block_pocket.block')).store()
 
     # resources
     options = {

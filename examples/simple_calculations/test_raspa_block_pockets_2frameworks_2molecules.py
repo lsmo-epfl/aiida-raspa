@@ -62,7 +62,10 @@ def main(codelabel, submit):
                     "TranslationProbability": 0.5,
                     "ReinsertionProbability": 0.5,
                     "SwapProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
+                    "CreateNumberOfMolecules": {
+                        "irmof_1": 1,
+                        "irmof_10": 2,
+                    },
                     "BlockPocketsFileName": {
                         "irmof_1": "irmof_1_4",
                         "irmof_10": "irmof_1_5",
@@ -73,7 +76,10 @@ def main(codelabel, submit):
                     "TranslationProbability": 0.5,
                     "ReinsertionProbability": 0.5,
                     "SwapProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
+                    "CreateNumberOfMolecules": {
+                        "irmof_1": 3,
+                        "irmof_10": 4,
+                    },
                     "BlockPocketsFileName": {
                         "irmof_1": "irmof_1_5",
                         "irmof_10": "irmof_1_4",
@@ -88,8 +94,8 @@ def main(codelabel, submit):
     framework_10 = CifData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-10.cif'))
 
     # block pocket
-    block_pocket_1_4 = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-1-4.block'))
-    block_pocket_1_5 = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-1-5.block'))
+    block_pocket_1_4 = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-1-4.block')).store()
+    block_pocket_1_5 = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-1-5.block')).store()
 
     # resources
     options = {

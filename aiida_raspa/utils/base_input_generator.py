@@ -41,10 +41,10 @@ class RaspaInput:
                 elif isinstance(molecule["BlockPocketsFileName"], six.string_types):
                     molecule["BlockPockets"] = "yes"
 
-            if "CreateNumberOfMolecules" in section:
-                if isinstance(section["CreateNumberOfMolecules"], dict):
-                    section["CreateNumberOfMolecules"] = self._dict_to_ordered_list(section["CreateNumberOfMolecules"],
-                                                                                    framework_order)
+            if "CreateNumberOfMolecules" in molecule:
+                if isinstance(molecule["CreateNumberOfMolecules"], dict):
+                    molecule["CreateNumberOfMolecules"] = self._dict_to_ordered_list(
+                        molecule["CreateNumberOfMolecules"], framework_order)
 
             self._render_section(output, molecule, indent=3)
 
