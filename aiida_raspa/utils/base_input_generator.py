@@ -6,7 +6,7 @@ import six
 
 ORDERED_ITEMS_COMPONENT_SECTION = [
     "NumberOfIdentityChanges",
-    "IdentityChangeList",
+    "IdentityChangesList",
 ]
 
 
