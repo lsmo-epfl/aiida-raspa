@@ -4,6 +4,11 @@ from __future__ import absolute_import
 from copy import deepcopy
 import six
 
+ORDERED_ITEMS_COMPONENT_SECTION = [
+    "NumberOfIdentityChanges",
+    "IdentityChangeList",
+]
+
 
 class RaspaInput:
     """Convert input dictionary into input file"""
@@ -46,6 +51,10 @@ class RaspaInput:
                     molecule["CreateNumberOfMolecules"] = self._dict_to_ordered_list(
                         molecule["CreateNumberOfMolecules"], framework_order)
 
+            for item in ORDERED_ITEMS_COMPONENT_SECTION:
+                if item in molecule:
+                    self._render_item(output, item, molecule.pop(item), indent=3)
+
             self._render_section(output, molecule, indent=3)
 
         return "\n".join(output) + "\n"
@@ -87,10 +96,17 @@ class RaspaInput:
         #        output.append("enter")
         #        output.append("This what comes:" + str(params))
         for key, val in sorted(params.items()):
-            if isinstance(val, list):
-                output.append('{}{} {}'.format(' ' * indent, key, ' '.join(str(p) for p in val)))
-            elif isinstance(val, bool):
-                val_str = 'yes' if val else 'no'
-                output.append('{}{} {}'.format(' ' * indent, key, val_str))
-            else:
-                output.append('{}{} {}'.format(' ' * indent, key, val))
+            RaspaInput._render_item(output, key, val, indent=indent)
+
+    @staticmethod
+    def _render_item(output, key, val, indent=0):
+        """
+        It takes one key-value item and adds to the output file
+        """
+        if isinstance(val, list):
+            output.append('{}{} {}'.format(' ' * indent, key, ' '.join(str(p) for p in val)))
+        elif isinstance(val, bool):
+            val_str = 'yes' if val else 'no'
+            output.append('{}{} {}'.format(' ' * indent, key, val_str))
+        else:
+            output.append('{}{} {}'.format(' ' * indent, key, val))
