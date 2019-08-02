@@ -87,14 +87,14 @@ def main(codelabel, submit):
             },
         })
 
-    # framework
+    # frameworks
     pwd = os.path.dirname(os.path.realpath(__file__))
-    framework_1 = CifData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-1.cif'))
-    framework_10 = CifData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-10.cif'))
+    framework_1 = CifData(file=os.path.join(pwd, 'files', 'IRMOF-1.cif'))
+    framework_10 = CifData(file=os.path.join(pwd, 'files', 'IRMOF-10.cif'))
 
     # block pocket
-    block_pocket_1_4 = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-1-4.block')).store()
-    block_pocket_1_5 = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'IRMOF-1-5.block')).store()
+    block_pocket_1_4 = SinglefileData(file=os.path.join(pwd, 'files', 'IRMOF-1-4.block')).store()
+    block_pocket_1_5 = SinglefileData(file=os.path.join(pwd, 'files', 'IRMOF-1-5.block')).store()
 
     # resources
     options = {

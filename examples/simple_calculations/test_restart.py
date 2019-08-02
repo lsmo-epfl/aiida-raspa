@@ -63,8 +63,7 @@ def main(codelabel, previous_calc, submit):
         })
 
     # framework
-    pwd = os.path.dirname(os.path.realpath(__file__))
-    framework = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
+    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'files', 'TCC1RS.cif'))
 
     # restart file
     retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
