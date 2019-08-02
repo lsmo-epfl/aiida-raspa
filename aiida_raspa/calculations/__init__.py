@@ -36,13 +36,21 @@ class RaspaCalculation(CalcJob):
         #Input parameters
         spec.input('parameters', valid_type=Dict, required=True, help='Input parameters')
         spec.input_namespace('framework', valid_type=CifData, required=False, dynamic=True, help='Input framework(s)')
-        spec.input_namespace(
-            'block_pocket', valid_type=SinglefileData, required=False, dynamic=True, help='Zeo++ block pocket file')
+        spec.input_namespace('block_pocket',
+                             valid_type=SinglefileData,
+                             required=False,
+                             dynamic=True,
+                             help='Zeo++ block pocket file')
         spec.input_namespace('file', valid_type=SinglefileData, required=False, help='Additional input file(s)')
         spec.input('settings', valid_type=Dict, required=False, help='Additional input parameters')
-        spec.input('parent_folder', valid_type=RemoteData, required=False, help='Remote folder used to continue the same simulation stating from the binary restarts.')
-        spec.input(
-            'retrieved_parent_folder', valid_type=FolderData, required=False, help='To use an old calculation as a starting poing for a new one.')
+        spec.input('parent_folder',
+                   valid_type=RemoteData,
+                   required=False,
+                   help='Remote folder used to continue the same simulation stating from the binary restarts.')
+        spec.input('retrieved_parent_folder',
+                   valid_type=FolderData,
+                   required=False,
+                   help='To use an old calculation as a starting poing for a new one.')
         spec.input('metadata.options.parser_name', valid_type=six.string_types, default=cls.DEFAULT_PARSER, non_db=True)
 
         # Output parameters
@@ -50,8 +58,9 @@ class RaspaCalculation(CalcJob):
         spec.output('warnings', valid_type=List, required=False, help="Warnings that appeared during the calculation")
 
         # Exit codes
-        spec.exit_code(
-            100, 'ERROR_NO_RETRIEVED_FOLDER', message='The retrieved folder data node could not be accessed.')
+        spec.exit_code(100,
+                       'ERROR_NO_RETRIEVED_FOLDER',
+                       message='The retrieved folder data node could not be accessed.')
         spec.exit_code(101, 'ERROR_NO_OUTPUT_FILE', message='The retrieved folder does not contain an output file.')
 
         # Default output node
@@ -179,12 +188,13 @@ class RaspaCalculation(CalcJob):
             elif system["type"] == "Framework":
                 system_or_box = system_name
                 (n_x, n_y, n_z) = tuple(map(int, system['UnitCells'].split()))
-            new_fname = "restart_{}_{}.{}.{}_{:.6f}_{:.0f}".format(
-                system_or_box, n_x, n_y, n_z, system['ExternalTemperature'], system['ExternalPressure'])
+            new_fname = "restart_{}_{}.{}.{}_{:.6f}_{:.0f}".format(system_or_box, n_x, n_y, n_z,
+                                                                   system['ExternalTemperature'],
+                                                                   system['ExternalPressure'])
             os.rename(os.path.join(current_folder, old_fname), os.path.join(current_folder, new_fname))
 
     def _handle_parent_folder(self, remote_copy_list):
         """Enable binary restart from the remote folder."""
         remote_copy_list.append((self.inputs.parent_folder.computer.uuid,
-                                 os.path.join(self.inputs.parent_folder.get_remote_path(), 'CrashRestart'),
-                                 'CrashRestart'))
+                                 os.path.join(self.inputs.parent_folder.get_remote_path(),
+                                              'CrashRestart'), 'CrashRestart'))

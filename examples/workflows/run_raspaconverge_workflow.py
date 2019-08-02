@@ -1,22 +1,26 @@
+# -*- coding: utf-8 -*-
+"""Example to run base workflows for RASPA"""
+
 from __future__ import absolute_import
 from __future__ import print_function
 import os
 import click
 
 from aiida.common.example_helpers import test_and_get_code  # noqa
-from aiida.orm.utils import DataFactory
-from aiida.work.run import submit
+from aiida.plugins import DataFactory
+from aiida.engine import submit
 from aiida_raspa.workflows import RaspaConvergeWorkChain
 
-# data objects
-CifData = DataFactory('cif')
-ParameterData = DataFactory('parameter')
-SinglefileData = DataFactory('singlefile')
+# Data objects
+CifData = DataFactory('cif')  # pylint: disable=invalid-name
+ParameterData = DataFactory('parameter')  # pylint: disable=invalid-name
+SinglefileData = DataFactory('singlefile')  # pylint: disable=invalid-name
 
 
 @click.command('cli')
 @click.argument('codelabel')
 def main(codelabel):
+    """Run base workchain"""
     code = test_and_get_code(codelabel, expected_code_type='raspa')
 
     options_dict = {

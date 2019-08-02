@@ -1,0 +1,8 @@
+label: raspa
+computer: localhost
+description:
+input_plugin: raspa
+on_computer: True
+remote_abs_path: /home/aiida/code/RASPA2_installed/bin/simulate
+append_text:
+prepend_text: export RASPA2_DIR=/home/aiida/code/RASPA2_installed/
