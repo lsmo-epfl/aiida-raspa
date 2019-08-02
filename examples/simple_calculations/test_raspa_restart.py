@@ -42,13 +42,13 @@ def main(codelabel, previous_calc, submit):
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
                 "HeliumVoidFraction": 0.149,
-                "ExternalTemperature": 300.0,
-                "ExternalPressure": 5e5,
             },
             "System": {
                 "tcc1rs": {
                     "type": "Framework",
-                    "UnitCells": "1 1 1"
+                    "UnitCells": "1 1 1",
+                    "ExternalTemperature": 300.0,
+                    "ExternalPressure": 5e5,
                 },
             },
             "Component": {
