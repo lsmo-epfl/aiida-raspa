@@ -1,6 +1,5 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""Run simple RASPA calculation."""
+"""Restart from simple RASPA calculation."""
 
 from __future__ import print_function
 from __future__ import absolute_import
@@ -9,8 +8,8 @@ import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
-from aiida.orm import Code, Dict
+from aiida.engine import run_get_pk, run
+from aiida.orm import Code, Dict, load_node
 from aiida.plugins import DataFactory
 from aiida_raspa.calculations import RaspaCalculation
 
@@ -20,9 +19,10 @@ CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 @click.command('cli')
 @click.argument('codelabel')
+@click.option('--previous_calc', '-p', required=True, type=int, help='PK of test_raspa_base.py calculation')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
-    """Prepare and submit simple RASPA calculation."""
+def main(codelabel, previous_calc, submit):
+    """Prepare and submit restart from simple RASPA calculation."""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
@@ -34,21 +34,20 @@ def main(codelabel, submit):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 2000,
-                "NumberOfInitializationCycles": 2000,
-                "PrintEvery": 1000,
+                "NumberOfCycles": 400,
+                "NumberOfInitializationCycles": 200,
+                "PrintEvery": 200,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "HeliumVoidFraction": 0.149,
-                "ExternalTemperature": 300.0,
-                "ExternalPressure": 5e5,
-                "WriteBinaryRestartFileEvery": 200,
             },
             "System": {
                 "tcc1rs": {
                     "type": "Framework",
-                    "UnitCells": "1 1 1"
+                    "UnitCells": "1 1 1",
+                    "HeliumVoidFraction": 0.149,
+                    "ExternalTemperature": 300.0,
+                    "ExternalPressure": 5e5,
                 },
             },
             "Component": {
@@ -63,8 +62,10 @@ def main(codelabel, submit):
         })
 
     # framework
-    pwd = os.path.dirname(os.path.realpath(__file__))
-    framework = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
+    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'files', 'TCC1RS.cif'))
+
+    # restart file
+    parent_folder = load_node(previous_calc).outputs.remote_folder
 
     # resources
     options = {
@@ -82,6 +83,7 @@ def main(codelabel, submit):
             "tcc1rs": framework,
         },
         "parameters": parameters,
+        "parent_folder": parent_folder,
         "code": code,
         "metadata": {
             "options": options,
@@ -89,17 +91,20 @@ def main(codelabel, submit):
             "store_provenance": True,
         }
     }
-
     if submit:
-        run(RaspaCalculation, **inputs)
-        #print(("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\
-        #        .format(calc.uuid,calc.dbnode.pk)))
+        print("Testing RASPA with simple input, binary restart ...")
+        res, pk = run_get_pk(RaspaCalculation, **inputs)
+        print("calculation pk: ", pk)
+        print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
+        print("OK, calculation has completed successfully")
     else:
+        print("Generating test input ...")
         inputs["metadata"]["dry_run"] = True
         inputs["metadata"]["store_provenance"] = False
         run(RaspaCalculation, **inputs)
-        print("submission test successful")
+        print("Submission test successful")
         print("In order to actually submit, add '--submit'")
+    print("-----")
 
 
 if __name__ == '__main__':

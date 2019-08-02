@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """Run simple RASPA calculation."""
 
@@ -9,7 +8,7 @@ import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
+from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict
 from aiida.plugins import DataFactory
 from aiida_raspa.calculations import RaspaCalculation
@@ -34,71 +33,36 @@ def main(codelabel, submit):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 600,
-                "NumberOfInitializationCycles": 0,
-                "PrintEvery": 100,
-                "ChargeMethod": "Ewald",
+                "NumberOfCycles": 400,
+                "NumberOfInitializationCycles": 200,
+                "PrintEvery": 200,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "HeliumVoidFraction": 0.149,
                 "WriteBinaryRestartFileEvery": 200,
             },
             "System": {
-                "cu_btc": {
+                "tcc1rs": {
                     "type": "Framework",
                     "UnitCells": "1 1 1",
+                    "HeliumVoidFraction": 0.149,
                     "ExternalTemperature": 300.0,
                     "ExternalPressure": 5e5,
                 },
             },
             "Component": {
-                "CO2": {
-                    "MoleculeDefinition": "TraPPE",
-                    "MolFraction": 0.15,
-                    "IdealGasRosenbluthWeight": 1.0,
-                    "TranslationProbability": 0.5,
-                    "RotationProbability": 0.5,
-                    "ReinsertionProbability": 0.5,
-                    "CBMCProbability": 0.5,
-                    "IdentityChangeProbability": 1.0,
-                    "IdentityChangesList": [0, 1, 2],
-                    "NumberOfIdentityChanges": 3,
-                    "SwapProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
-                },
                 "methane": {
                     "MoleculeDefinition": "TraPPE",
-                    "MolFraction": 0.1,
-                    "IdealGasRosenbluthWeight": 1.0,
                     "TranslationProbability": 0.5,
                     "ReinsertionProbability": 0.5,
-                    "CBMCProbability": 0.5,
-                    "IdentityChangeProbability": 1.0,
-                    "IdentityChangesList": [0, 1, 2],
-                    "NumberOfIdentityChanges": 3,
                     "SwapProbability": 1.0,
                     "CreateNumberOfMolecules": 0,
-                },
-                "N2": {
-                    "MoleculeDefinition": "TraPPE",
-                    "MolFraction": 0.1,
-                    "IdealGasRosenbluthWeight": 1.0,
-                    "TranslationProbability": 0.5,
-                    "ReinsertionProbability": 0.5,
-                    "CBMCProbability": 0.5,
-                    "IdentityChangeProbability": 1.0,
-                    "IdentityChangesList": [0, 1, 2],
-                    "NumberOfIdentityChanges": 3,
-                    "SwapProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
-                },
+                }
             },
         })
 
     # framework
-    pwd = os.path.dirname(os.path.realpath(__file__))
-    framework = CifData(file=pwd + '/test_raspa_attach_file/Cu-BTC.cif')
+    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'files', 'TCC1RS.cif'))
 
     # resources
     options = {
@@ -107,12 +71,13 @@ def main(codelabel, submit):
             "num_mpiprocs_per_machine": 1,
         },
         "max_wallclock_seconds": 1 * 30 * 60,  # 30 min
+        "withmpi": False,
     }
 
     # collecting all the inputs
     inputs = {
         "framework": {
-            "cu_btc": framework,
+            "tcc1rs": framework,
         },
         "parameters": parameters,
         "code": code,
@@ -124,15 +89,19 @@ def main(codelabel, submit):
     }
 
     if submit:
-        run(RaspaCalculation, **inputs)
-        #print(("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\
-        #        .format(calc.uuid,calc.dbnode.pk)))
+        print("Testing RASPA with simple input ...")
+        res, pk = run_get_pk(RaspaCalculation, **inputs)
+        print("calculation pk: ", pk)
+        print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
+        print("OK, calculation has completed successfully")
     else:
+        print("Generating test input ...")
         inputs["metadata"]["dry_run"] = True
         inputs["metadata"]["store_provenance"] = False
         run(RaspaCalculation, **inputs)
-        print("submission test successful")
+        print("Submission test successful")
         print("In order to actually submit, add '--submit'")
+    print("-----")
 
 
 if __name__ == '__main__':
