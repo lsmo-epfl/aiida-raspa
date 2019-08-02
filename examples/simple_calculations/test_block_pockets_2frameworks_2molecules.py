@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """Run RASPA calculation with blocked pockets."""
 from __future__ import print_function
@@ -8,7 +7,7 @@ import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
+from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict, SinglefileData
 from aiida.plugins import DataFactory
 from aiida_raspa.calculations import RaspaCalculation
@@ -32,9 +31,9 @@ def main(codelabel, submit):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 2000,
-                "NumberOfInitializationCycles": 2000,
-                "PrintEvery": 1000,
+                "NumberOfCycles": 400,
+                "NumberOfInitializationCycles": 200,
+                "PrintEvery": 200,
                 "Forcefield": "GenericMOFs",
                 "RemoveAtomNumberCodeFromLabel": True,
                 "EwaldPrecision": 1e-6,
@@ -127,14 +126,21 @@ def main(codelabel, submit):
     }
 
     if submit:
-        run(RaspaCalculation, **inputs)
-        #print(("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\
-        #        .format(calc.uuid,calc.dbnode.pk)))
+        print("Testing RASPA calculation with two frameworks each one "
+              "containing 2 molecules (metahne/xenon) and bock pockets ...")
+        res, pk = run_get_pk(RaspaCalculation, **inputs)
+        print("calculation pk: ", pk)
+        print("Total Energy average (irmof_1):",
+              res['output_parameters'].dict.irmof_1['general']['total_energy_average'])
+        print("Total Energy average (irmof_10):",
+              res['output_parameters'].dict.irmof_10['general']['total_energy_average'])
+        print("OK, calculation has completed successfully")
     else:
+        print("Generating test input ...")
         inputs["metadata"]["dry_run"] = True
         inputs["metadata"]["store_provenance"] = False
         run(RaspaCalculation, **inputs)
-        print("submission test successful")
+        print("Submission test successful")
         print("In order to actually submit, add '--submit'")
 
 

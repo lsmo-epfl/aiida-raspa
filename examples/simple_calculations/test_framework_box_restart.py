@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""Run RASPA calculation to compute Henry coefficient."""
+"""Run simple RASPA calculation."""
+
 from __future__ import print_function
 from __future__ import absolute_import
 import os
@@ -8,9 +9,9 @@ import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
+from aiida.engine import run_get_pk, run
+from aiida.orm import Code, Dict, load_node
 from aiida.plugins import DataFactory
-from aiida.orm import Code, Dict
 from aiida_raspa.calculations import RaspaCalculation
 
 # data objects
@@ -19,9 +20,10 @@ CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 @click.command('cli')
 @click.argument('codelabel')
+@click.option('--previous_calc', '-p', required=True, type=int, help='PK of test_raspa_framework_box.py calculation')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
-    """Prepare and submit simple RASPA calculation to compute Henry coefficient."""
+def main(codelabel, previous_calc, submit):
+    """Prepare and submit simple RASPA calculation."""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
@@ -33,25 +35,34 @@ def main(codelabel, submit):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 2000,
-                "PrintEvery": 1000,
+                "NumberOfCycles": 400,
+                "NumberOfInitializationCycles": 200,
+                "PrintEvery": 100,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
-                "CutOff": 12.0,
-                "HeliumVoidFraction": 0.149,
-                "ExternalTemperature": 300.0,
+                "WriteBinaryRestartFileEvery": 200,
             },
             "System": {
                 "tcc1rs": {
                     "type": "Framework",
-                    "UnitCells": "1 1 1"
-                }
+                    "UnitCells": "1 1 1",
+                    "ExternalTemperature": 350.0,
+                    "ExternalPressure": 6e5,
+                    "HeliumVoidFraction": 0.149,
+                },
+                "box_25_angstroms": {
+                    "type": "Box",
+                    "BoxLengths": "25 25 25",
+                    "ExternalTemperature": 350.0,
+                    "ExternalPressure": 6e5,
+                },
             },
             "Component": {
                 "methane": {
                     "MoleculeDefinition": "TraPPE",
-                    "WidomProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
+                    "TranslationProbability": 0.5,
+                    "ReinsertionProbability": 0.5,
+                    "SwapProbability": 1.0,
                 }
             },
         })
@@ -59,6 +70,9 @@ def main(codelabel, submit):
     # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
     framework = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
+
+    # restart file
+    retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
 
     # resources
     options = {
@@ -76,6 +90,7 @@ def main(codelabel, submit):
             "tcc1rs": framework,
         },
         "parameters": parameters,
+        "retrieved_parent_folder": retrieved_parent_folder,
         "code": code,
         "metadata": {
             "options": options,
@@ -85,15 +100,21 @@ def main(codelabel, submit):
     }
 
     if submit:
-        run(RaspaCalculation, **inputs)
-        #print(("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\
-        #        .format(calc.uuid,calc.dbnode.pk)))
+        print("Testing RASPA with framework and box, restart ...")
+        res, pk = run_get_pk(RaspaCalculation, **inputs)
+        print("calculation pk: ", pk)
+        print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
+        print("Total Energy average (box_25_angstroms):",
+              res['output_parameters'].dict.box_25_angstroms['general']['total_energy_average'])
+        print("OK, calculation has completed successfully")
     else:
+        print("Generating test input ...")
         inputs["metadata"]["dry_run"] = True
         inputs["metadata"]["store_provenance"] = False
         run(RaspaCalculation, **inputs)
         print("submission test successful")
         print("In order to actually submit, add '--submit'")
+    print("-----")
 
 
 if __name__ == '__main__':

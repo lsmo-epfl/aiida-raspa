@@ -1,71 +1,67 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""Run RASPA calculation with blocked pockets."""
+"""Run RASPA calculation with components mixture."""
+
 from __future__ import print_function
 from __future__ import absolute_import
-import os
 import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
-from aiida.orm import Code, Dict, SinglefileData
-from aiida.plugins import DataFactory
+from aiida.engine import run_get_pk, run
+from aiida.orm import Code, Dict
 from aiida_raspa.calculations import RaspaCalculation
-
-# data objects
-CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 
 @click.command('cli')
 @click.argument('codelabel')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
 def main(codelabel, submit):
-    """Prepare and submit RASPA calculation with blocked pockets."""
+    """Prepare and submit RASPA calculation with components mixture."""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
         print("The code '{}' does not exist".format(codelabel))
         sys.exit(1)
+
     # parameters
     parameters = Dict(
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 2000,
-                "NumberOfInitializationCycles": 2000,
-                "PrintEvery": 1000,
+                "NumberOfCycles": 400,
+                "NumberOfInitializationCycles": 200,
+                "PrintEvery": 200,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "HeliumVoidFraction": 0.149,
-                "ExternalTemperature": 300.0,
-                "ExternalPressure": 5e5,
             },
             "System": {
-                "tcc1rs": {
-                    "type": "Framework",
-                    "UnitCells": "1 1 1"
-                }
+                "box_25_angstrom": {
+                    "type": "Box",
+                    "BoxLengths": "25 25 25",
+                    "ExternalTemperature": 300.0,
+                    "ExternalPressure": 5e5,
+                },
             },
             "Component": {
-                "methane": {
+                "propane": {
+                    "MoleculeName": "propane",
                     "MoleculeDefinition": "TraPPE",
-                    "TranslationProbability": 0.5,
-                    "ReinsertionProbability": 0.5,
+                    "TranslationProbability": 1.0,
+                    "ReinsertionProbability": 1.0,
                     "SwapProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
-                    "BlockPocketsFileName": "block_tcc1rs_methane",
-                }
+                    "CreateNumberOfMolecules": 30,
+                },
+                "butane": {
+                    "MoleculeName": "butane",
+                    "MoleculeDefinition": "TraPPE",
+                    "TranslationProbability": 1.0,
+                    "ReinsertionProbability": 1.0,
+                    "SwapProbability": 1.0,
+                    "CreateNumberOfMolecules": 30,
+                },
             },
         })
-
-    # framework
-    pwd = os.path.dirname(os.path.realpath(__file__))
-    framework = CifData(file=os.path.join(pwd, 'test_raspa_attach_file', 'TCC1RS.cif'))
-
-    # block pocket
-    block_pocket_node = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'block_pocket.block')).store()
 
     # resources
     options = {
@@ -79,13 +75,7 @@ def main(codelabel, submit):
 
     # collecting all the inputs
     inputs = {
-        "framework": {
-            "tcc1rs": framework,
-        },
         "parameters": parameters,
-        "block_pocket": {
-            "block_tcc1rs_methane": block_pocket_node,
-        },
         "code": code,
         "metadata": {
             "options": options,
@@ -95,15 +85,20 @@ def main(codelabel, submit):
     }
 
     if submit:
-        run(RaspaCalculation, **inputs)
-        #print(("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\
-        #        .format(calc.uuid,calc.dbnode.pk)))
+        print("Testing RASPA with binary mixture (propane/butane) ...")
+        res, pk = run_get_pk(RaspaCalculation, **inputs)
+        print("calculation pk: ", pk)
+        print("Total Energy average (box_25_angstrom):",
+              res['output_parameters'].dict.box_25_angstrom['general']['total_energy_average'])
+        print("OK, calculation has completed successfully")
     else:
+        print("Generating test input ...")
         inputs["metadata"]["dry_run"] = True
         inputs["metadata"]["store_provenance"] = False
         run(RaspaCalculation, **inputs)
-        print("submission test successful")
+        print("Submission test successful")
         print("In order to actually submit, add '--submit'")
+    print("-----")
 
 
 if __name__ == '__main__':
