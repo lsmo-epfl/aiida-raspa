@@ -15,9 +15,16 @@ class RaspaInput:
 
     def __init__(self, params):
         self.params = deepcopy(params)  # make sure the original object is not modified
-        self.system_order = sorted(
-            params["System"].keys())  # we sort the keys to keep the order in the input file persistent
-        # this is essential for the restarts
+        try:
+            self.system_order = sorted(params["System"].keys())  # we sort the keys to keep the order in the input
+        except KeyError:
+            raise KeyError("The input dictionary should contain the System subdictionary.")
+        except AttributeError:
+            raise AttributeError("The System subdictionary should be of type dict.")
+        # file persistent this is essential for the restarts.
+
+        if self.system_order:
+            raise ValueError("The System subdictionary should not be empty.")
 
     # --------------------------------------------------------------------------
     def render(self):
