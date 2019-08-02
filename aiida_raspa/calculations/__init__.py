@@ -39,7 +39,6 @@ class RaspaCalculation(CalcJob):
         spec.input_namespace(
             'block_pocket', valid_type=SinglefileData, required=False, dynamic=True, help='Zeo++ block pocket file')
         spec.input_namespace('file', valid_type=SinglefileData, required=False, help='Additional input file(s)')
-        # TODO: understand do `settings` need to be of type `Dict`? Would dict also work?
         spec.input('settings', valid_type=Dict, required=False, help='Additional input parameters')
         spec.input('parent_folder', valid_type=RemoteData, required=False, help='Remote folder used to continue the same simulation stating from the binary restarts.')
         spec.input(
@@ -69,30 +68,34 @@ class RaspaCalculation(CalcJob):
                            the plugin should put all its files.
         """
 
-        # handle input parameters
-        parameters = self.inputs.parameters.get_dict()
+        # initialize input parameters
+        inp = RaspaInput(self.inputs.parameters.get_dict())
+
+        # keep order of systems in the extras
+        self.node.set_extra('system_order', inp.system_order)
 
         # handle framework(s) and/or box(es)
-        if "System" in parameters:
-            self._handle_system_section(parameters, folder)
+        if "System" in inp.params:
+            self._handle_system_section(inp.params["System"], folder)
 
         # handle restart
         if 'retrieved_parent_folder' in self.inputs:
-            self._handle_retrieved_parent_folder(parameters, folder)
+            self._handle_retrieved_parent_folder(inp, folder)
+            inp.params['GeneralSettings']['RestartFile'] = True
 
         # handle binary restart
         remote_copy_list = []
         if 'parent_folder' in self.inputs:
-            self._handle_parent_folder(parameters, remote_copy_list)
+            self._handle_parent_folder(remote_copy_list)
+            inp.params['GeneralSettings']['ContinueAfterCrash'] = True
 
-        # Get settings
-        if 'setting' in self.inputs:
+        # get settings
+        if 'settings' in self.inputs:
             settings = self.inputs.settings.get_dict()
         else:
             settings = {}
 
         # write raspa input file
-        inp = RaspaInput(parameters)
         with open(folder.get_abs_path(self.INPUT_FILE), "w") as fobj:
             fobj.write(inp.render())
 
@@ -136,9 +139,9 @@ class RaspaCalculation(CalcJob):
 
         return calcinfo
 
-    def _handle_system_section(self, parameters, folder):
+    def _handle_system_section(self, system_dict, folder):
         """Handle framework(s) and/or box(es)."""
-        for name, sparams in parameters["System"].items():
+        for name, sparams in system_dict.items():
             if sparams["type"] == "Framework":
                 try:
                     self.inputs.framework[name].export(folder.get_abs_path(name + '.cif'), fileformat='cif')
@@ -147,19 +150,39 @@ class RaspaCalculation(CalcJob):
                         "You specified '{}' framework in the input dictionary, but did not provide the input "
                         "framework with the same name".format(name))
 
-    def _handle_retrieved_parent_folder(self, parameters, folder):
+    def _handle_retrieved_parent_folder(self, inp, folder):
         """Enable restart from the retrieved folder."""
         if "Restart" not in self.inputs.retrieved_parent_folder._repository.list_object_names():  # pylint: disable=protected-access
             raise InputValidationError("Restart was requested but the restart "
                                        "folder was not found in the previos calculation.")
+
+        dest_folder = folder.get_abs_path("RestartInitial")
+
+        # we first copy the whole restart folder
         copytree(
             os.path.join(self.inputs.retrieved_parent_folder._repository._get_base_folder().abspath, "Restart"),  # pylint: disable=protected-access
-            folder.get_abs_path("RestartInitial"))
-        parameters['GeneralSettings']['RestartFile'] = True
+            dest_folder)
 
-    def _handle_parent_folder(self, parameters, remote_copy_list):
+        # once this is done, we rename the files to match temperature, pressure and number of unit cells
+        for i_system, system_name in enumerate(inp.system_order):
+            system = inp.params["System"][system_name]
+            current_folder = folder.get_abs_path("RestartInitial/System_{}".format(i_system))
+            content = os.listdir(current_folder)
+            if len(content) != 1:
+                raise InputValidationError("Restart folder should contain 1 file only, got {}".format(len(content)))
+            old_fname = content[0]
+            if system["type"] == "Box":
+                system_or_box = "Box"
+                (n_x, n_y, n_z) = (1, 1, 1)
+            elif system["type"] == "Framework":
+                system_or_box = system_name
+                (n_x, n_y, n_z) = tuple(map(int, system['UnitCells'].split()))
+            new_fname = "restart_{}_{}.{}.{}_{:.6f}_{:.0f}".format(
+                system_or_box, n_x, n_y, n_z, system['ExternalTemperature'], system['ExternalPressure'])
+            os.rename(os.path.join(current_folder, old_fname), os.path.join(current_folder, new_fname))
+
+    def _handle_parent_folder(self, remote_copy_list):
         """Enable binary restart from the remote folder."""
         remote_copy_list.append((self.inputs.parent_folder.computer.uuid,
                                  os.path.join(self.inputs.parent_folder.get_remote_path(), 'CrashRestart'),
                                  'CrashRestart'))
-        parameters['GeneralSettings']['ContinueAfterCrash'] = True

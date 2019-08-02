@@ -32,13 +32,10 @@ class RaspaParser(Parser):
         output_parameters = {}
         warnings = []
         ncomponents = len(self.node.inputs.parameters.get_dict()['Component'])
-        for system in out_folder._repository.list_object_names(output_folder_name):  # pylint: disable=protected-access
-            # decide the name for the system
+        for system_id, system_name in enumerate(self.node.get_extra('system_order')):
+            # specify the name for the system
+            system = "System_{}".format(system_id)
             fname = out_folder._repository.list_object_names(os.path.join(output_folder_name, system))[0]  # pylint: disable=protected-access
-            system_id = system.replace("System_", "")
-            system_name = '_'.join(fname.split('_')[1:-3])
-            if system_name == 'Box':
-                system_name += system_id
 
             # get absolute path of the output file
             output_abs_path = os.path.join(
