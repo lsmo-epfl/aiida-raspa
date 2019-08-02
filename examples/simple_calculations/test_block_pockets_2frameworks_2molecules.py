@@ -127,7 +127,7 @@ def main(codelabel, submit):
 
     if submit:
         print("Testing RASPA calculation with two frameworks each one "
-              "containing 2 molecules (metahne/xenon) and bock pockets ...")
+              "containing 2 molecules (metahne/xenon) and block pockets ...")
         res, pk = run_get_pk(RaspaCalculation, **inputs)
         print("calculation pk: ", pk)
         print("Total Energy average (irmof_1):",
