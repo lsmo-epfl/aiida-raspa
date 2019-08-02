@@ -21,14 +21,16 @@ KELVIN_TO_KJ_PER_MOL = float(8.314464919 / 1000.0)  #exactly the same as Raspa
 # manage block of the first type
 # --------------------------------------------------------------------------------------------
 BLOCK_1_LIST = [
-    (re.compile("Average Volume:"), "cell_volume", (1, 2, 4)),
-    (re.compile("Average Pressure:"), "pressure", (1, 2, 4)),
-    (re.compile("Average temperature:"), "temperature", (1, 2, 4)),
-    (re.compile("Average Density:"), "adsorbate_density", (1, 2, 4)),
-    (re.compile("Total energy:$"), "total_energy", (1, 2, 4)),
-    (re.compile("Average Heat Capacity"), "framework_heat_capacity", (1, 2, 4)),
-    (re.compile("Heat of desorption:"), "heat_of_desorption", (1, 4, 3)),
-    (re.compile("Enthalpy of adsorption:"), "enthalpy_of_adsorption", (1, 4, 3)),
+    (re.compile("Average Volume:"), "cell_volume", (1, 2, 4), 0),
+    (re.compile("Average Pressure:"), "pressure", (1, 2, 4), 0),
+    (re.compile("Average temperature:"), "temperature", (1, 2, 4), 0),
+    (re.compile("Average Density:"), "adsorbate_density", (1, 2, 4), 0),
+    (re.compile("Total energy:$"), "total_energy", (1, 2, 4), 0),
+    (re.compile("Average Heat Capacity"), "framework_heat_capacity", (1, 2, 4), 0),
+    (re.compile("Heat of desorption:"), "heat_of_desorption", (1, 4, 3), 4),
+    (re.compile("Enthalpy of adsorption:"), "enthalpy_of_adsorption", (1, 4, 3), 4),
+    (re.compile(".*Total enthalpy of adsorption from components and measured mol-fraction"),
+     "enthalpy_of_adsorption_total_molfrac", (1, 4, 3), 0),
 ]
 
 
@@ -50,7 +52,7 @@ def parse_block1(flines, result_dict, prop, value=1, units=2, dev=4):
             result_dict[prop + '_average'] = float(line.split()[value])
             result_dict[prop + '_units'] = re.sub(r"[{}()\[\]]", '', line.split()[units])
             result_dict[prop + '_dev'] = float(line.split()[dev])
-            return
+            break
 
 
 # manage energy block
@@ -130,7 +132,6 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
         res_cmp = res_per_component[0]
         for line in fobj:
             if "Component" in line and "(Adsorbate molecule)" in line:
-                print(line)
                 component_names.append(line.split()[2][1:-1])
             # TODO maybe change for parse_line?
             if "Conversion factor molecules/unit cell -> mol/kg:" in line:
@@ -166,8 +167,13 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
             for parse in BLOCK_1_LIST:
                 if parse[0].match(line):
                     parse_block1(fobj, result_dict, parse[1], *parse[2])
+                    # I assume here that properties per component are present furhter in the output file.
+                    # so I need to skip some lines:
+                    skip_nlines_after = parse[3]
+                    while skip_nlines_after > 0:
+                        line = next(fobj)
+                        skip_nlines_after -= 1
                     for i, cmpnt in enumerate(component_names):
-                        # I assume here that properties per component are present right in the next line.
                         # The order of properties per molecule is the same as the order of molecules in the
                         # input file. So if component name was not found in the next line, I break the loop
                         # immidiately as there is no reason to continue it
@@ -176,6 +182,10 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
                             parse_block1(fobj, res_per_component[i], parse[1], *parse[2])
                         else:
                             break
+                        skip_nlines_after = parse[3]
+                        while skip_nlines_after > 0:
+                            line = next(fobj)
+                            skip_nlines_after -= 1
 
                     continue  # no need to perform further checks, propperty has been found already
             for parse in ENERGY_BLOCK_LIST:
