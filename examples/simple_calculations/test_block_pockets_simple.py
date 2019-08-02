@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """Run RASPA calculation with blocked pockets."""
 from __future__ import print_function
@@ -8,7 +7,7 @@ import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
+from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict, SinglefileData
 from aiida.plugins import DataFactory
 from aiida_raspa.calculations import RaspaCalculation
@@ -32,20 +31,20 @@ def main(codelabel, submit):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 2000,
-                "NumberOfInitializationCycles": 2000,
-                "PrintEvery": 1000,
+                "NumberOfCycles": 400,
+                "NumberOfInitializationCycles": 200,
+                "PrintEvery": 200,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "HeliumVoidFraction": 0.149,
-                "ExternalTemperature": 300.0,
-                "ExternalPressure": 5e5,
             },
             "System": {
                 "tcc1rs": {
                     "type": "Framework",
-                    "UnitCells": "1 1 1"
+                    "UnitCells": "1 1 1",
+                    "HeliumVoidFraction": 0.149,
+                    "ExternalTemperature": 300.0,
+                    "ExternalPressure": 5e5,
                 }
             },
             "Component": {
@@ -62,10 +61,10 @@ def main(codelabel, submit):
 
     # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
-    framework = CifData(file=os.path.join(pwd, 'test_raspa_attach_file', 'TCC1RS.cif'))
+    framework = CifData(file=os.path.join(pwd, 'files', 'TCC1RS.cif'))
 
     # block pocket
-    block_pocket_node = SinglefileData(file=os.path.join(pwd, 'test_raspa_attach_file', 'block_pocket.block')).store()
+    block_pocket_node = SinglefileData(file=os.path.join(pwd, 'files', 'block_pocket.block')).store()
 
     # resources
     options = {
@@ -95,14 +94,17 @@ def main(codelabel, submit):
     }
 
     if submit:
-        run(RaspaCalculation, **inputs)
-        #print(("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\
-        #        .format(calc.uuid,calc.dbnode.pk)))
+        print("Testing RASPA with block pockets ...")
+        res, pk = run_get_pk(RaspaCalculation, **inputs)
+        print("calculation pk: ", pk)
+        print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
+        print("OK, calculation has completed successfully")
     else:
+        print("Generating test input ...")
         inputs["metadata"]["dry_run"] = True
         inputs["metadata"]["store_provenance"] = False
         run(RaspaCalculation, **inputs)
-        print("submission test successful")
+        print("Submission test successful")
         print("In order to actually submit, add '--submit'")
 
 

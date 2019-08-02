@@ -9,7 +9,7 @@ import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
+from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict, load_node
 from aiida.plugins import DataFactory
 from aiida_raspa.calculations import RaspaCalculation
@@ -47,8 +47,8 @@ def main(codelabel, previous_calc, submit):
                 "tcc1rs": {
                     "type": "Framework",
                     "UnitCells": "1 1 1",
-                    "ExternalTemperature": 300.0,
-                    "ExternalPressure": 5e5,
+                    "ExternalTemperature": 350.0,
+                    "ExternalPressure": 6e5,
                 },
             },
             "Component": {
@@ -63,8 +63,7 @@ def main(codelabel, previous_calc, submit):
         })
 
     # framework
-    pwd = os.path.dirname(os.path.realpath(__file__))
-    framework = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
+    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'files', 'TCC1RS.cif'))
 
     # restart file
     retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
@@ -94,15 +93,19 @@ def main(codelabel, previous_calc, submit):
         }
     }
     if submit:
-        run(RaspaCalculation, **inputs)
-        #print(("submitted calculation; calc=Calculation(uuid='{}') # ID={}"\
-        #        .format(calc.uuid,calc.dbnode.pk)))
+        print("Testing RASPA with simple input, restart ...")
+        res, pk = run_get_pk(RaspaCalculation, **inputs)
+        print("calculation pk: ", pk)
+        print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
+        print("OK, calculation has completed successfully")
     else:
+        print("Generating test input ...")
         inputs["metadata"]["dry_run"] = True
         inputs["metadata"]["store_provenance"] = False
         run(RaspaCalculation, **inputs)
-        print("submission test successful")
+        print("Submission test successful")
         print("In order to actually submit, add '--submit'")
+    print("-----")
 
 
 if __name__ == '__main__':
