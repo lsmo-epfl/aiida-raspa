@@ -90,7 +90,7 @@ class RaspaCalculation(CalcJob):
             inp.params['GeneralSettings']['ContinueAfterCrash'] = True
 
         # get settings
-        if 'setting' in self.inputs:
+        if 'settings' in self.inputs:
             settings = self.inputs.settings.get_dict()
         else:
             settings = {}
