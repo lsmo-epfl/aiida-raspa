@@ -31,6 +31,10 @@ BLOCK_1_LIST = [
     (re.compile("Enthalpy of adsorption:"), "enthalpy_of_adsorption", (1, 4, 3)),
 ]
 
+# block of box properties.
+BOX_PROP_LIST = [
+    (re.compile("Average Box-lengths:"), 'box'),
+]
 
 # pylint: disable=too-many-arguments
 def parse_block1(flines, result_dict, prop, value=1, units=2, dev=4):
@@ -86,53 +90,6 @@ def parse_block_energy(flines, res_dict, prop):
             res_dict[prop + '_total_energy_dev'] = float(line.split()[1]) * KELVIN_TO_KJ_PER_MOL
             res_dict[prop + '_vdw_energy_dev'] = float(line.split()[3]) * KELVIN_TO_KJ_PER_MOL
             res_dict[prop + '_coulomb_energy_dev'] = float(line.split()[5]) * KELVIN_TO_KJ_PER_MOL
-            return
-
-##
-BOX_PROP_LIST = [
-    (re.compile("Average Box-lengths:"), 'box'),
-]
-
-def parse_box(flines, res_box, prop):
-    """ Parse block that looks as follows:
-    Average Box-lengths:
-    ====================
-    Block[ 0]           34.19950 [A^3]
-    Block[ 1]           34.19950 [A^3]
-    Block[ 2]           34.19950 [A^3]
-    Block[ 3]           34.19950 [A^3]
-    Block[ 4]           34.19950 [A^3]
-    ------------------------------------------------------------------------------
-    Average Box.ax            34.19950 [A^3] +/-            0.00000 [A^3]
-    Block[ 0]           90.00000 [A^3]
-    Block[ 1]           90.00000 [A^3]
-    Block[ 2]           90.00000 [A^3]
-    Block[ 3]           90.00000 [A^3]
-    Block[ 4]           90.00000 [A^3]
-    ------------------------------------------------------------------------------
-    Average alpha angle            90.00000 [degrees] +/-            0.00000 [degrees]
-    """
-    res_box['length_unit'] = 'A'
-    res_box['angle_unit'] = 'degrees'
-    for line in flines:
-        if 'Average Box.ax' in line:
-            res_box[prop + '_ax'] = float(line.split()[2])
-            res_box[prop + '_ax_dev'] = float(line.split()[5])
-        if 'Average Box.by' in line:
-            res_box[prop + '_by'] = float(line.split()[2])
-            res_box[prop + '_by_dev'] = float(line.split()[5])
-        if 'Average Box.cz' in line:
-            res_box[prop + '_cz'] = float(line.split()[2])
-            res_box[prop + '_cz_dev'] = float(line.split()[5])
-        if 'Average alpha angle' in line:
-            res_box[prop + '_alpha'] = float(line.split()[3])
-            res_box[prop + '_alpha_dev'] = float(line.split()[6])
-        if 'Average beta angle' in line:
-            res_box[prop + '_beta'] = float(line.split()[3])
-            res_box[prop + '_beta_dev'] = float(line.split()[6])
-        if 'Average gamma angle' in line:
-            res_box[prop + '_gamma'] = float(line.split()[3])
-            res_box[prop + '_gamma_dev'] = float(line.split()[6])
             return
 
 # manage lines with components
@@ -230,8 +187,14 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
                     continue  # no need to perform further checks, propperty has been found already
             for parse in BOX_PROP_LIST:
                 if parse[0].match(line):
-                    parse_box(fobj, result_dict, prop=parse[1])
-                    continue
+                    # parse three cell vectors
+                    parse_block1(fobj, result_dict, prop='box_ax', value=2, units=3, dev=5)
+                    parse_block1(fobj, result_dict, prop='box_by', value=2, units=3, dev=5)
+                    parse_block1(fobj, result_dict, prop='box_cz', value=2, units=3, dev=5)
+                    # parsee angles between the cell vectors
+                    parse_block1(fobj, result_dict, prop='box_alpha', value=3, units=4, dev=6)
+                    parse_block1(fobj, result_dict, prop='box_beta', value=3, units=4, dev=6)
+                    parse_block1(fobj, result_dict, prop='box_gamma', value=3, units=4, dev=6)
             if framework_density.match(line) is not None:
                 result_dict['framework_density'] = line.split()[2]
                 result_dict['framework_density_units'] = re.sub(r'[{}()\[\]]', '', line.split()[3])

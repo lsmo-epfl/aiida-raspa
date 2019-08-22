@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Run RASPA single-component GEMC calculation"""
+"""Run RASPA single-component GEMC calculation -- Restart"""
 
 from __future__ import print_function
 from __future__ import absolute_import
@@ -8,14 +8,15 @@ import click
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
-from aiida.orm import Code, Dict
+from aiida.orm import Code, Dict, load_node
 from aiida_raspa.calculations import RaspaCalculation
 
 
 @click.command('cli')
 @click.argument('codelabel')
+@click.option('--previous_calc', '-p', required=True, type=int, help='PK of test_gemc_single_comp.py calculation')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
+def main(codelabel, previous_calc, submit):
     """Prepare and submit RASPA calculation with components mixture."""
     try:
         code = Code.get_from_string(codelabel)
@@ -41,29 +42,31 @@ def main(codelabel, submit):
                     "type": "Box",
                     "BoxLengths": "25 25 25",
                     "BoxAngles": "90 90 90",
-                    "ExternalTemperature": 300.0,
+                    "ExternalTemperature": 200.0,
                 },
                 "box_two": {
                     "type": "Box",
                     "BoxLengths": "25 25 25",
                     "BoxAngles": "90 90 90",
-                    "ExternalTemperature": 300.0,
+                    "ExternalTemperature": 200.0,
                 }
             },
             "Component": {
                 "methane": {
-                    # "MoleculeName": "methane",
                     "MoleculeDefinition": "TraPPE",
                     "TranslationProbability": 1.0,
                     "ReinsertionProbability": 1.0,
                     "GibbsSwapProbability": 1.0,
                     "CreateNumberOfMolecules": {
-                        "box_one" : 150,
-                        "box_two" : 150,
+                        "box_one" : 50,
+                        "box_two" : 50,
                     },
                 },
             },
         })
+
+    # restart file
+    retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
 
     # resources
     options = {
@@ -78,6 +81,7 @@ def main(codelabel, submit):
     # collecting all the inputs
     inputs = {
         "parameters": parameters,
+        "retrieved_parent_folder": retrieved_parent_folder,
         "code": code,
         "metadata": {
             "options": options,
@@ -87,11 +91,9 @@ def main(codelabel, submit):
     }
 
     if submit:
-        print("Testing RASPA with binary mixture (propane/butane) ...")
+        print("Testing RASPA GEMC with methane ...")
         res, pk = run_get_pk(RaspaCalculation, **inputs)
         print("calculation pk: ", pk)
-        # print("Total Energy average (box_25_angstrom):",
-              # res['output_parameters'].dict.box_25_angstrom['general']['total_energy_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
