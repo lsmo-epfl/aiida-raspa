@@ -31,6 +31,10 @@ BLOCK_1_LIST = [
     (re.compile("Enthalpy of adsorption:"), "enthalpy_of_adsorption", (1, 4, 3)),
 ]
 
+# block of box properties.
+BOX_PROP_LIST = [
+    (re.compile("Average Box-lengths:"), 'box'),
+]
 
 # pylint: disable=too-many-arguments
 def parse_block1(flines, result_dict, prop, value=1, units=2, dev=4):
@@ -87,7 +91,6 @@ def parse_block_energy(flines, res_dict, prop):
             res_dict[prop + '_vdw_energy_dev'] = float(line.split()[3]) * KELVIN_TO_KJ_PER_MOL
             res_dict[prop + '_coulomb_energy_dev'] = float(line.split()[5]) * KELVIN_TO_KJ_PER_MOL
             return
-
 
 # manage lines with components
 # --------------------------------------------------------------------------------------------
@@ -182,6 +185,16 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
                 if parse[0].match(line):
                     parse_block_energy(fobj, result_dict, prop=parse[1])
                     continue  # no need to perform further checks, propperty has been found already
+            for parse in BOX_PROP_LIST:
+                if parse[0].match(line):
+                    # parse three cell vectors
+                    parse_block1(fobj, result_dict, prop='box_ax', value=2, units=3, dev=5)
+                    parse_block1(fobj, result_dict, prop='box_by', value=2, units=3, dev=5)
+                    parse_block1(fobj, result_dict, prop='box_cz', value=2, units=3, dev=5)
+                    # parsee angles between the cell vectors
+                    parse_block1(fobj, result_dict, prop='box_alpha', value=3, units=4, dev=6)
+                    parse_block1(fobj, result_dict, prop='box_beta', value=3, units=4, dev=6)
+                    parse_block1(fobj, result_dict, prop='box_gamma', value=3, units=4, dev=6)
             if framework_density.match(line) is not None:
                 result_dict['framework_density'] = line.split()[2]
                 result_dict['framework_density_units'] = re.sub(r'[{}()\[\]]', '', line.split()[3])

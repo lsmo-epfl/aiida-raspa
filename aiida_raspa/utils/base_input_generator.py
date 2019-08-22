@@ -23,7 +23,7 @@ class RaspaInput:
             raise AttributeError("The System subdictionary should be of type dict.")
         # file persistent this is essential for the restarts.
 
-        if self.system_order:
+        if not self.system_order:
             raise ValueError("The System subdictionary should not be empty.")
 
     # --------------------------------------------------------------------------
