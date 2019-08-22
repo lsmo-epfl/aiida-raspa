@@ -52,7 +52,6 @@ def main(codelabel, submit):
             },
             "Component": {
                 "methane": {
-                    # "MoleculeName": "methane",
                     "MoleculeDefinition": "TraPPE",
                     "TranslationProbability": 1.0,
                     "ReinsertionProbability": 1.0,
@@ -87,11 +86,13 @@ def main(codelabel, submit):
     }
 
     if submit:
-        print("Testing RASPA with binary mixture (propane/butane) ...")
+        print("Testing RASPA GEMC with methane ...")
         res, pk = run_get_pk(RaspaCalculation, **inputs)
         print("calculation pk: ", pk)
-        # print("Total Energy average (box_25_angstrom):",
-              # res['output_parameters'].dict.box_25_angstrom['general']['total_energy_average'])
+        print("Total Energy average (box_one):",
+              res['output_parameters'].dict.box_one['general']['total_energy_average'])
+        print("Total Energy average (box_two):",
+              res['output_parameters'].dict.box_two['general']['total_energy_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")

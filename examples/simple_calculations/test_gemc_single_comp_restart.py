@@ -91,9 +91,13 @@ def main(codelabel, previous_calc, submit):
     }
 
     if submit:
-        print("Testing RASPA GEMC with methane ...")
+        print("Testing RASPA GEMC with methane (Restart)...")
         res, pk = run_get_pk(RaspaCalculation, **inputs)
         print("calculation pk: ", pk)
+        print("Total Energy average (box_one):",
+              res['output_parameters'].dict.box_one['general']['total_energy_average'])
+        print("Total Energy average (box_two):",
+              res['output_parameters'].dict.box_two['general']['total_energy_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
