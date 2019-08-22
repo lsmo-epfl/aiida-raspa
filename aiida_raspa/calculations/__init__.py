@@ -174,6 +174,8 @@ class RaspaCalculation(CalcJob):
             if system["type"] == "Box":
                 system_or_box = "Box"
                 (n_x, n_y, n_z) = (1, 1, 1)
+                if 'ExternalPressure' not in system:
+                    system['ExternalPressure'] = 0
             elif system["type"] == "Framework":
                 system_or_box = system_name
                 (n_x, n_y, n_z) = tuple(map(int, system['UnitCells'].split()))
