@@ -36,6 +36,7 @@ BOX_PROP_LIST = [
     (re.compile("Average Box-lengths:"), 'box'),
 ]
 
+
 # pylint: disable=too-many-arguments
 def parse_block1(flines, result_dict, prop, value=1, units=2, dev=4):
     """Parse block that looks as follows:
@@ -92,6 +93,7 @@ def parse_block_energy(flines, res_dict, prop):
             res_dict[prop + '_coulomb_energy_dev'] = float(line.split()[5]) * KELVIN_TO_KJ_PER_MOL
             return
 
+
 # manage lines with components
 # --------------------------------------------------------------------------------------------
 LINES_WITH_COMPONENT_LIST = [
@@ -121,7 +123,6 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
     res_per_component = []
     for i in range(ncomponents):
         res_per_component.append({})
-    # TODO: replace with direct reading of the content
     result_dict = {'exceeded_walltime': False}
     framework_density = re.compile("Framework Density:")
     num_of_molec = re.compile("Number of molecules:$")
@@ -135,7 +136,7 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
             if "Component" in line and "(Adsorbate molecule)" in line:
                 print(line)
                 component_names.append(line.split()[2][1:-1])
-            # TODO maybe change for parse_line?
+            # Consider to change it with parse_line()
             if "Conversion factor molecules/unit cell -> mol/kg:" in line:
                 res_cmp['conversion_factor_molec_uc_to_mol_kg'] = float(line.split()[6])
                 res_cmp['conversion_factor_molec_uc_to_mol_kg_unit'] = "(mol/kg)/(molec/uc)"
@@ -206,7 +207,7 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
         # 3rd parsing part
         icomponent = 0
         for line in fobj:
-            # TODO: change for parse_line?
+            # Consider to change it with parse_line?
             if 'Average loading absolute [molecules/unit cell]' in line:
                 res_per_component[icomponent]['loading_absolute_average'] = float(line.split()[5])
                 res_per_component[icomponent]['loading_absolute_dev'] = float(line.split()[7])
