@@ -2,7 +2,7 @@ FROM aiidateam/aiida-docker-stack
 
 # Set HOME variable:
 ENV HOME="/home/aiida"
-ENV RASPA_DIR=${HOME}/code/RASPA2_installed
+ENV RASPA2_DIR=${HOME}/code/RASPA2_installed
 
 # Install necessary codes 
 RUN apt-get update && apt-get install -y --no-install-recommends  \
@@ -34,7 +34,7 @@ RUN aclocal
 RUN autoreconf -i
 RUN automake --add-missing
 RUN autoconf
-RUN ./configure --prefix=${RASPA_DIR}
+RUN ./configure --prefix=${RASPA2_DIR}
 RUN make
 RUN make install
 
