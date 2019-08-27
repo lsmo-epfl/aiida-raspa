@@ -1,25 +1,28 @@
+# -*- coding: utf-8 -*-
+"""Example to run base workflows for RASPA"""
+
 from __future__ import absolute_import
 from __future__ import print_function
 import os
 import click
 
 from aiida.common.example_helpers import test_and_get_code  # noqa
-from aiida.orm.utils import DataFactory
+from aiida.plugins import DataFactory
 from aiida.orm import load_node
-from aiida.work.run import submit
+from aiida.engine import submit
 from aiida_raspa.workflows import RaspaConvergeWorkChain
 
 # data objects
-CifData = DataFactory('cif')
-ParameterData = DataFactory('parameter')
-SinglefileData = DataFactory('singlefile')
+CifData = DataFactory('cif')  # pylint: disable=invalid-name
+ParameterData = DataFactory('parameter')  # pylint: disable=invalid-name
+SinglefileData = DataFactory('singlefile')  # pylint: disable=invalid-name
 
 
 @click.command('cli')
 @click.argument('codelabel')
-@click.option(
-    '--block_pockets', '-b', required=True, type=int, help='Block pockets')
+@click.option('--block_pockets', '-b', required=True, type=int, help='Block pockets')
 def main(codelabel, block_pockets):
+    """Run base workchain with block pockets"""
     code = test_and_get_code(codelabel, expected_code_type='raspa')
 
     options_dict = {
@@ -63,14 +66,14 @@ def main(codelabel, block_pockets):
     structure = CifData(file=pwd + '/test_raspa_attach_file/TCC1RS.cif')
 
     # block pockets
-    bp = load_node(block_pockets)
+    block_p = load_node(block_pockets)
 
     submit(
         RaspaConvergeWorkChain,
         code=code,
         structure=structure,
         parameters=parameters,
-        block_component_0=bp,
+        block_component_0=block_p,
         options=options,
         _label='MyFirstWokchain',
     )

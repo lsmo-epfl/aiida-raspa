@@ -58,8 +58,8 @@ def main(codelabel, previous_calc, submit):
                     "ReinsertionProbability": 1.0,
                     "GibbsSwapProbability": 1.0,
                     "CreateNumberOfMolecules": {
-                        "box_one" : 50,
-                        "box_two" : 50,
+                        "box_one": 50,
+                        "box_two": 50,
                     },
                 },
             },
