@@ -66,8 +66,8 @@ def main(codelabel, submit):
                         "irmof_10": 2,
                     },
                     "BlockPocketsFileName": {
-                        "irmof_1": "irmof_1_4",
-                        "irmof_10": "irmof_1_5",
+                        "irmof_1": "irmof_1_test",
+                        "irmof_10": "irmof_10_test",
                     },
                 },
                 "xenon": {
@@ -80,8 +80,8 @@ def main(codelabel, submit):
                         "irmof_10": 4,
                     },
                     "BlockPocketsFileName": {
-                        "irmof_1": "irmof_1_5",
-                        "irmof_10": "irmof_1_4",
+                        "irmof_1": "irmof_1_test",
+                        "irmof_10": "irmof_10_test",
                     },
                 },
             },
@@ -93,8 +93,8 @@ def main(codelabel, submit):
     framework_10 = CifData(file=os.path.join(pwd, 'files', 'IRMOF-10.cif'))
 
     # block pocket
-    block_pocket_1_4 = SinglefileData(file=os.path.join(pwd, 'files', 'IRMOF-1-4.block')).store()
-    block_pocket_1_5 = SinglefileData(file=os.path.join(pwd, 'files', 'IRMOF-1-5.block')).store()
+    block_pocket_1 = SinglefileData(file=os.path.join(pwd, 'files', 'IRMOF-1_test.block')).store()
+    block_pocket_10 = SinglefileData(file=os.path.join(pwd, 'files', 'IRMOF-10_test.block')).store()
 
     # resources
     options = {
@@ -114,8 +114,8 @@ def main(codelabel, submit):
         },
         "parameters": parameters,
         "block_pocket": {
-            "irmof_1_4": block_pocket_1_4,
-            "irmof_1_5": block_pocket_1_5,
+            "irmof_1_test": block_pocket_1,
+            "irmof_10_test": block_pocket_10,
         },
         "code": code,
         "metadata": {
