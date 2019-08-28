@@ -27,6 +27,7 @@ DEFAULT_OPTIONS = {
     "max_wallclock_seconds": 1 * 60 * 60,
 }
 
+
 # pylint: disable=too-many-locals
 def multiply_unit_cell(cif, threshold):
     """Returns the multiplication factors (tuple of 3 int) for the cell vectors
