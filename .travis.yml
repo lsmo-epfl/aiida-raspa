@@ -1,0 +1,17 @@
+sudo: reqiured
+
+services:
+- docker
+
+before_install:
+  - docker build -t aiida_raspa_test .
+  - docker run -d aiida_raspa_test
+
+script:
+  - sleep 30 # wait untill the container is launched
+  - "export DOCKERID=`docker ps -qf 'ancestor=aiida_raspa_test'`"
+  - "echo \"Docker ID: $DOCKERID\""
+  - "docker exec -it --user aiida \"$DOCKERID\" /bin/bash -l -c 'cd code/aiida-raspa/ && ./run_tests.sh'"
+
+git:
+  depth: 3

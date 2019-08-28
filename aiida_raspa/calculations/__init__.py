@@ -1,340 +1,197 @@
 # -*- coding: utf-8 -*-
 """Raspa input plugin."""
 from __future__ import absolute_import
-from aiida.common.datastructures import CalcInfo, CodeInfo
-from aiida.common.exceptions import InputValidationError
-from aiida.common.utils import classproperty
-from aiida.orm.calculation.job import JobCalculation
-from aiida.orm.utils import DataFactory
-from six.moves import map
-from six.moves import range
-from shutil import copyfile
+import os
+from shutil import copyfile, copytree
+import six
+from six.moves import map, range
+
+from aiida.orm import Dict, FolderData, List, RemoteData, SinglefileData
+from aiida.common import CalcInfo, CodeInfo, InputValidationError
+#from aiida.cmdline.utils import echo
+from aiida.engine import CalcJob
+from aiida.plugins import DataFactory
+
+from aiida_raspa.utils import RaspaInput
 
 # data objects
-CifData = DataFactory('cif')
-FolderData = DataFactory('folder')
-ParameterData = DataFactory('parameter')
-RemoteData = DataFactory('remote')
-SinglefileData = DataFactory('singlefile')
+CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 
-class RaspaCalculation(JobCalculation):
-    """This is a RaspaCalculation, subclass of JobCalculation,
-    to prepare input for an RaspaCalculation.
-    For information on RASPA, refer to: https://github.com/numat/RASPA2.
+class RaspaCalculation(CalcJob):
+    """This is a RaspaCalculation, subclass of CalcJob, to prepare input for RASPA code.
+    For information on RASPA, refer to: https://github.com/iraspa/raspa2.
     """
+    # Defaults
+    INPUT_FILE = 'simulation.input'
+    OUTPUT_FOLDER = 'Output'
+    RESTART_FOLDER = 'Restart'
+    PROJECT_NAME = 'aiida'
+    DEFAULT_PARSER = 'raspa'
 
-    # --------------------------------------------------------------------------
-    def _init_internal_params(self):
-        """
-        Set parameters of instance
-        """
-        super(RaspaCalculation, self)._init_internal_params()
-        self._INPUT_FILE_NAME = 'simulation.input'
-        self._OUTPUT_FILE_NAME = 'Output/System_0/*'
-        self._DEFAULT_INPUT_FILE = self._INPUT_FILE_NAME
-        self._DEFAULT_OUTPUT_FILE = self._OUTPUT_FILE_NAME
-        self._RESTART_FILE_NAME = 'Restart/System_0/restart*'
-        self._PROJECT_NAME = 'aiida'
-        self._COORDS_FILE_NAME = 'framework.cif'
-        self._default_parser = 'raspa'
-
-    # --------------------------------------------------------------------------
-    @classproperty
-    def _use_methods(cls):
-        """
-        Extend the parent _use_methods with further keys.
-        This will be manually added to the _use_methods in each subclass
-        """
-        retdict = JobCalculation._use_methods
-        retdict.update({
-            "structure": {
-                'valid_types': CifData,
-                'additional_parameter': None,
-                'linkname': 'structure',
-                'docstring': "Choose the input structure to use",
-            },
-            "settings": {
-                'valid_types': ParameterData,
-                'additional_parameter': None,
-                'linkname': 'settings',
-                'docstring': "Use an additional node for special settings",
-            },
-            "parameters": {
-                'valid_types':
-                ParameterData,
-                'additional_parameter':
-                None,
-                'linkname':
-                'parameters',
-                'docstring':
-                "Use a node that specifies the "
-                "input parameters for the namelists",
-            },
-            "parent_folder": {
-                'valid_types':
-                RemoteData,
-                'additional_parameter':
-                None,
-                'linkname':
-                'parent_folder',
-                'docstring':
-                "Use a remote folder as parent folder "
-                "(for restarts and similar)",
-            },
-            # TODO: modify this for aiida version 1.0
-            "block_component_0": {
-                'valid_types': SinglefileData,
-                'additional_parameter': None,
-                'linkname': 'block_component_0',
-                'docstring': "Use block pockets obtained with Zeo++ code",
-            },
-            "retrieved_parent_folder": {
-                'valid_types':
-                FolderData,
-                'additional_parameter':
-                None,
-                'linkname':
-                'retrieved_parent_folder',
-                'docstring':
-                "Use retrieved restart file for restart of this calculation",
-            },
-            "file": {
-                'valid_types': SinglefileData,
-                'additional_parameter': "linkname",
-                'linkname': cls._get_linkname_file,
-                'docstring': "Use files to provide additional parameters",
-            },
-        })
-        return retdict
-
-    # --------------------------------------------------------------------------
     @classmethod
-    def _get_linkname_file(cls, linkname):
-        return (linkname)
+    def define(cls, spec):
+        super(RaspaCalculation, cls).define(spec)
+
+        #Input parameters
+        spec.input('parameters', valid_type=Dict, required=True, help='Input parameters')
+        spec.input_namespace('framework', valid_type=CifData, required=False, dynamic=True, help='Input framework(s)')
+        spec.input_namespace('block_pocket',
+                             valid_type=SinglefileData,
+                             required=False,
+                             dynamic=True,
+                             help='Zeo++ block file')
+        spec.input_namespace('file', valid_type=SinglefileData, required=False, help='additiona input file')
+        spec.input('settings', valid_type=Dict, required=False, help='Additional input parameters')
+        spec.input('parent_folder', valid_type=RemoteData, required=False, help='Remote folder used for restarts')
+        spec.input('retrieved_parent_folder',
+                   valid_type=FolderData,
+                   required=False,
+                   help='For restarting the calculation')
+        spec.input('metadata.options.parser_name', valid_type=six.string_types, default=cls.DEFAULT_PARSER, non_db=True)
+
+        # Output parameters
+        spec.output('output_parameters', valid_type=Dict, required=True, help="The results of calculation")
+        spec.output('warnings', valid_type=List, required=False)
+
+        # Exit codes
+        spec.exit_code(100,
+                       'ERROR_NO_RETRIEVED_FOLDER',
+                       message='The retrieved folder data node could not be accessed.')
+        spec.exit_code(101, 'ERROR_NO_OUTPUT_FILE', message='The retrieved folder does not contain an output file.')
+
+        # Default output node
+        spec.default_output_node = 'output_parameters'
 
     # --------------------------------------------------------------------------
     # pylint: disable = too-many-locals
-    def _prepare_for_submission(self, tempfolder, inputdict):
+    def prepare_for_submission(self, folder):
         """
         This is the routine to be called when you want to create
         the input files and related stuff with a plugin.
 
-        :param tempfolder: a aiida.common.folders.Folder subclass where
+        :param folder: a aiida.common.folders.Folder subclass where
                            the plugin should put all its files.
-        :param inputdict: a dictionary with the input nodes, as they would
-                be returned by get_inputdata_dict (without the Code!)
         """
 
-        in_nodes = self._verify_inlinks(inputdict)
-        params, structure, code, settings, block_pockets, restart_folder, local_copy_list = in_nodes
+        # initialize input parameters
+        inp = RaspaInput(self.inputs.parameters.get_dict())
+
+        # keep order of systems in the extras
+        self.node.set_extra('system_order', inp.system_order)
+
+        # handle framework(s) and/or box(es)
+        if "System" in inp.params:
+            self._handle_system_section(inp.params["System"], folder)
 
         # handle restart
-        if restart_folder is not None:
-            self._create_restart(restart_folder, params, tempfolder)
+        if 'retrieved_parent_folder' in self.inputs:
+            self._handle_retrieved_parent_folder(inp, folder)
+            inp.params['GeneralSettings']['RestartFile'] = True
 
-        # handle block pockets
-        for i, block_pocket in enumerate(block_pockets):
-            if block_pocket:
-                params['Component'][i][
-                    'BlockPocketsFileName'] = 'component_{}'.format(i)
-                params['Component'][i]['BlockPockets'] = 'yes'
-                copyfile(
-                    block_pocket.get_file_abs_path(),
-                    tempfolder.get_subfolder(".").get_abs_path(
-                        'component_{}.block'.format(i)))
+        # handle binary restart
+        remote_copy_list = []
+        if 'parent_folder' in self.inputs:
+            self._handle_parent_folder(remote_copy_list)
+            inp.params['GeneralSettings']['ContinueAfterCrash'] = True
+
+        # get settings
+        if 'settings' in self.inputs:
+            settings = self.inputs.settings.get_dict()
+        else:
+            settings = {}
 
         # write raspa input file
-        if 'FrameworkName' in params['GeneralSettings']:
-            raise InputValidationError(
-                'You should not provide "FrameworkName"'
-                ' as an input parameter. It will be generated automatically'
-                ' by AiiDA')
-        elif structure is not None:
-            params['GeneralSettings']['Framework'] = '0'
-            params['GeneralSettings']['FrameworkName'] = 'framework'
-        inp = RaspaInput(params)
-        inp_fn = tempfolder.get_abs_path(self._INPUT_FILE_NAME)
-        with open(inp_fn, "w") as f:
-            f.write(inp.render())
-
-        # create structure file
-        if structure is not None:
-            copyfile(structure.get_file_abs_path(),
-                     tempfolder.get_abs_path(self._COORDS_FILE_NAME))
+        with open(folder.get_abs_path(self.INPUT_FILE), "w") as fobj:
+            fobj.write(inp.render())
 
         # create code info
         codeinfo = CodeInfo()
-        cmdline = settings.pop('cmdline', [])
-        cmdline += [self._INPUT_FILE_NAME]
-        codeinfo.cmdline_params = cmdline
-        codeinfo.code_uuid = code.uuid
+        codeinfo.cmdline_params = settings.pop('cmdline', []) + [self.INPUT_FILE]
+        codeinfo.code_uuid = self.inputs.code.uuid
 
         # create calc info
         calcinfo = CalcInfo()
-        calcinfo.stdin_name = self._INPUT_FILE_NAME
+        calcinfo.stdin_name = self.INPUT_FILE
         calcinfo.uuid = self.uuid
         calcinfo.cmdline_params = codeinfo.cmdline_params
-        calcinfo.stdin_name = self._INPUT_FILE_NAME
-        #        calcinfo.stdout_name = self._OUTPUT_FILE_NAME
+        calcinfo.stdin_name = self.INPUT_FILE
+        #calcinfo.stdout_name = self.OUTPUT_FILE
         calcinfo.codes_info = [codeinfo]
 
         # file lists
         calcinfo.remote_symlink_list = []
-        calcinfo.local_copy_list = local_copy_list
-        calcinfo.remote_copy_list = []
-        calcinfo.retrieve_list = [[self._OUTPUT_FILE_NAME, '.', 0],
-                                  [self._RESTART_FILE_NAME, '.', 0]]
+        calcinfo.local_copy_list = []
+        if 'file' in self.inputs:
+            for fobj in self.inputs.file.values():
+                calcinfo.local_copy_list.append((fobj.uuid, fobj.filename, fobj.filename))
+
+        # block pockets
+        if 'block_pocket' in self.inputs:
+            for name, fobj in self.inputs.block_pocket.items():
+                calcinfo.local_copy_list.append((fobj.uuid, fobj.filename, name + '.block'))
+
+        # continue the previous calculation starting from the binary restart
+        calcinfo.remote_copy_list = remote_copy_list
+
+        calcinfo.retrieve_list = [self.OUTPUT_FOLDER, self.RESTART_FOLDER]
         calcinfo.retrieve_list += settings.pop('additional_retrieve_list', [])
 
         # check for left over settings
         if settings:
-            msg = "The following keys have been found "
-            msg += "in the settings input node {}, ".format(self.pk)
-            msg += "but were not understood: " + ",".join(
-                list(settings.keys()))
-            raise InputValidationError(msg)
+            raise InputValidationError("The following keys have been found " +
+                                       "in the settings input node {}, ".format(self.pk) + "but were not understood: " +
+                                       ",".join(list(settings.keys())))
 
         return calcinfo
 
-    # --------------------------------------------------------------------------
-    def _create_restart(self, restart_folder, params, tempfolder):
-        content = None
-        for fname in restart_folder.get_folder_list():
-            if "restart" in fname:
-                content = restart_folder.get_file_content(fname)
-        if content is None:
-            raise InputValidationError(
-                "Restart was requested but the restart"
-                " file was not found in the previos calculation.")
-
-        genset = params['GeneralSettings']
-        (nx, ny, nz) = tuple(map(int, genset['UnitCells'].split()))
-        restart_fname = "restart_%s_%d.%d.%d_%lf_%lg" % (
-            "framework", nx, ny, nz, genset['ExternalTemperature'],
-            genset['ExternalPressure'])
-        fn = tempfolder.get_subfolder(
-            'RestartInitial/System_0', create=True).get_abs_path(restart_fname)
-
-        params['GeneralSettings']['RestartFile'] = True
-
-        with open(fn, "w") as f:
-            f.write(content)
-
-    # --------------------------------------------------------------------------
-    # pylint: disable=too-many-locals, too-many-branches
-    def _verify_inlinks(self, inputdict):
-        # parameters
-        params_node = inputdict.pop('parameters', None)
-        if params_node is None:
-            raise InputValidationError("No parameters specified")
-        if not isinstance(params_node, ParameterData):
-            raise InputValidationError("parameters type not ParameterData")
-        params = params_node.get_dict()
-
-        try:
-            n_components = len(params['Component'])
-        except KeyError:
-            raise InputValidationError(
-                "Component section was not provided in the input parameters")
-
-        # structure
-        structure = inputdict.pop('structure', None)
-        if structure is not None:
-            if not isinstance(structure, CifData):
-                raise InputValidationError("structure type not CifData")
-
-        # code
-        code = inputdict.pop(self.get_linkname('code'), None)
-        if code is None:
-            raise InputValidationError("No code specified")
-
-        # settings
-        # ... if not provided fall back to empty dict
-        settings_node = inputdict.pop('settings', ParameterData())
-        if not isinstance(settings_node, ParameterData):
-            raise InputValidationError("settings type not ParameterData")
-        settings = settings_node.get_dict()
-
-        # block pockets
-        block_pockets = []
-        for i in range(n_components):
-            bp = inputdict.pop('block_component_{}'.format(i), None)
-            if bp:
-                if isinstance(bp, SinglefileData):
-                    block_pockets.append(bp)
-                else:
+    def _handle_system_section(self, system_dict, folder):
+        """Handle framework(s) and/or box(es)."""
+        for name, sparams in system_dict.items():
+            if sparams["type"] == "Framework":
+                try:
+                    self.inputs.framework[name].export(folder.get_abs_path(name + '.cif'), fileformat='cif')
+                except KeyError:
                     raise InputValidationError(
-                        "Block pockets should be either None, or of the type SinglefileData."
-                        "You provided the object {} of type {}".format(
-                            bp, type(bp)))
-            else:
-                block_pockets.append(None)
+                        "You specified '{}' framework in the input dictionary, but did not provide the input "
+                        "framework with the same name".format(name))
 
-        # folder with the restart information
-        restart_folder = inputdict.pop('retrieved_parent_folder', None)
-        if restart_folder is not None and not isinstance(
-                restart_folder, FolderData):
-            raise InputValidationError(
-                "retrieved parent folder is of type {}, "
-                "but not FolderData".format(type(restart_folder)))
+    def _handle_retrieved_parent_folder(self, inp, folder):
+        """Enable restart from the retrieved folder."""
+        if "Restart" not in self.inputs.retrieved_parent_folder._repository.list_object_names():  # pylint: disable=protected-access
+            raise InputValidationError("Restart was requested but the restart "
+                                       "folder was not found in the previos calculation.")
 
-        # handle additional parameter files
-        local_copy_list = []
-        for k, v in inputdict.items():
-            if isinstance(v, SinglefileData):
-                inputdict.pop(k)
-                local_copy_list.append((v.get_file_abs_path(), v.filename))
+        dest_folder = folder.get_abs_path("RestartInitial")
 
-        if inputdict:
-            msg = "unrecognized input nodes: " + str(list(inputdict.keys()))
-            raise InputValidationError(msg)
+        # we first copy the whole restart folder
+        copytree(
+            os.path.join(self.inputs.retrieved_parent_folder._repository._get_base_folder().abspath, "Restart"),  # pylint: disable=protected-access
+            dest_folder)
 
-        return (params, structure, code, settings, block_pockets,
-                restart_folder, local_copy_list)
+        # once this is done, we rename the files to match temperature, pressure and number of unit cells
+        for i_system, system_name in enumerate(inp.system_order):
+            system = inp.params["System"][system_name]
+            current_folder = folder.get_abs_path("RestartInitial/System_{}".format(i_system))
+            content = os.listdir(current_folder)
+            if len(content) != 1:
+                raise InputValidationError("Restart folder should contain 1 file only, got {}".format(len(content)))
+            old_fname = content[0]
+            if system["type"] == "Box":
+                system_or_box = "Box"
+                (n_x, n_y, n_z) = (1, 1, 1)
+                if 'ExternalPressure' not in system:
+                    system['ExternalPressure'] = 0
+            elif system["type"] == "Framework":
+                system_or_box = system_name
+                (n_x, n_y, n_z) = tuple(map(int, system['UnitCells'].split()))
+            new_fname = "restart_{}_{}.{}.{}_{:.6f}_{:.0f}".format(system_or_box, n_x, n_y, n_z,
+                                                                   system['ExternalTemperature'],
+                                                                   system['ExternalPressure'])
+            os.rename(os.path.join(current_folder, old_fname), os.path.join(current_folder, new_fname))
 
-
-# ==============================================================================
-class RaspaInput(object):
-    def __init__(self, params):
-        self.params = params
-
-    # --------------------------------------------------------------------------
-    def render(self):
-        output = ["!!! Generated by AiiDA !!!"]
-        section = self.params.pop("GeneralSettings")
-        self._render_section(output, section)
-
-        section = self.params.pop("Component")
-        for i, molec in enumerate(section):
-            output.append('Component %d MoleculeName %s' %
-                          (i, molec.pop("MoleculeName")))
-            self._render_section(output, molec, indent=3)
-        return "\n".join(output)
-
-    # --------------------------------------------------------------------------
-    def _render_section(self, output, params, indent=0):
-        """
-        It takes a dictionary and recurses through.
-
-        For key-value pair it checks whether the value is a dictionary
-        and prepends the key with &
-        It passes the valued to the same function, increasing the indentation
-        If the value is a list, I assume that this is something the user
-        wants to store repetitively
-        """
-        #        output.append("enter")
-        #        output.append("This what comes:" + str(params))
-        for key, val in sorted(params.items()):
-            if isinstance(val, list):
-                output.append('%s%s  %s' % (' ' * indent, key, ' '.join(
-                    str(p) for p in val)))
-            elif isinstance(val, bool):
-                val_str = 'yes' if val else 'no'
-                output.append('%s%s  %s' % (' ' * indent, key, val_str))
-            else:
-                output.append('%s%s  %s' % (' ' * indent, key, val))
-
-
-#        output.append('exit')
-# EOF
+    def _handle_parent_folder(self, remote_copy_list):
+        """Enable binary restart from the remote folder."""
+        remote_copy_list.append((self.inputs.parent_folder.computer.uuid,
+                                 os.path.join(self.inputs.parent_folder.get_remote_path(),
+                                              'CrashRestart'), 'CrashRestart'))
