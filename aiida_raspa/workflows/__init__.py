@@ -27,6 +27,7 @@ DEFAULT_OPTIONS = {
     "max_wallclock_seconds": 1 * 60 * 60,
 }
 
+
 # pylint: disable=too-many-locals
 def multiply_unit_cell(cif, threshold):
     """Returns the multiplication factors (tuple of 3 int) for the cell vectors
@@ -38,7 +39,7 @@ def multiply_unit_cell(cif, threshold):
 
     # Parsing cif
     struct = next(six.itervalues(cif.values.dictionary))
-    
+
     a = float(struct['_cell_length_a'])  # pylint: disable=invalid-name
     b = float(struct['_cell_length_b'])  # pylint: disable=invalid-name
     c = float(struct['_cell_length_c'])  # pylint: disable=invalid-name
@@ -60,18 +61,19 @@ def multiply_unit_cell(cif, threshold):
 
     # Computing perpendicular widths, as implemented in Raspa
     # for the check (simplified for triangular cell matrix)
-    axc1 = cell[0,0] * cell[2,2]
-    axc2 = - cell[0,0] * cell[2,1]
-    bxc1 = cell[1,1] * cell[2,2]
-    bxc2 = - cell[1,0] * cell[2,2]
-    bxc3 = cell[1,0] * cell[2,1] - cell[1,1] * cell[2,0]
-    det = fabs(cell[0,0] * cell[1,1] * cell[2,2])
+    axc1 = cell[0, 0] * cell[2, 2]
+    axc2 = -cell[0, 0] * cell[2, 1]
+    bxc1 = cell[1, 1] * cell[2, 2]
+    bxc2 = -cell[1, 0] * cell[2, 2]
+    bxc3 = cell[1, 0] * cell[2, 1] - cell[1, 1] * cell[2, 0]
+    det = fabs(cell[0, 0] * cell[1, 1] * cell[2, 2])
     perpwidth = np.zeros(3)
     perpwidth[0] = det / sqrt(bxc1**2 + bxc2**2 + bxc3**2)
     perpwidth[1] = det / sqrt(axc1**2 + axc2**2)
-    perpwidth[2] = cell[2,2]
+    perpwidth[2] = cell[2, 2]
 
-    return tuple(int(ceil(threshold / perpwidth[i])) for i in range(3))
+    return tuple(int(ceil(threshold / perpwidth[i])) for i in six.moves.range(3))
+
 
 class RaspaConvergeWorkChain(WorkChain):
     """A base workchain to get converged RASPA calculations"""
