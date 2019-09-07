@@ -7,7 +7,6 @@
 # For further information on the license, see the LICENSE.txt file           #
 # For further information please visit http://www.aiida.net                  #
 ##############################################################################
+"""AiiDA-RASPA plugins, parsers, workflows, etc ..."""
 
-__version__ = "0.3.1"
-
-# EOF
+__version__ = "1.0.0a1"
