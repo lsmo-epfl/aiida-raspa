@@ -23,9 +23,6 @@
         ],
         "aiida.parsers": [
             "raspa = aiida_raspa.parsers:RaspaParser"
-        ],
-        "aiida.workflows": [
-            "raspa.converge = aiida_raspa.workflows:RaspaConvergeWorkChain"
         ]
     },
     "reentry_register": true,

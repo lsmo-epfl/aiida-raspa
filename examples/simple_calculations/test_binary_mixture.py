@@ -9,7 +9,7 @@ import click
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict
-from aiida_raspa.calculations import RaspaCalculation
+from aiida_raspa.calculations import RaspaCalculation  # pylint: disable=unused-import
 
 
 @click.command('cli')
@@ -63,8 +63,10 @@ def main(codelabel, submit):
             },
         })
 
-    # resources
-    options = {
+    # Contructing builder
+    builder = code.get_builder()
+    builder.parameters = parameters
+    builder.metadata.options = {
         "resources": {
             "num_machines": 1,
             "num_mpiprocs_per_machine": 1,
@@ -72,30 +74,21 @@ def main(codelabel, submit):
         "max_wallclock_seconds": 1 * 30 * 60,  # 30 min
         "withmpi": False,
     }
-
-    # collecting all the inputs
-    inputs = {
-        "parameters": parameters,
-        "code": code,
-        "metadata": {
-            "options": options,
-            "dry_run": False,
-            "store_provenance": True,
-        }
-    }
+    builder.metadata.dry_run = False
+    builder.metadata.store_provenance = True
 
     if submit:
         print("Testing RASPA with binary mixture (propane/butane) ...")
-        res, pk = run_get_pk(RaspaCalculation, **inputs)
+        res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
         print("Total Energy average (box_25_angstrom):",
               res['output_parameters'].dict.box_25_angstrom['general']['total_energy_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
-        inputs["metadata"]["dry_run"] = True
-        inputs["metadata"]["store_provenance"] = False
-        run(RaspaCalculation, **inputs)
+        builder.metadata.dry_run = True
+        builder.metadata.store_provenance = False
+        run(builder)
         print("Submission test successful")
         print("In order to actually submit, add '--submit'")
     print("-----")

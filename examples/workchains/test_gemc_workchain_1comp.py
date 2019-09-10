@@ -1,51 +1,55 @@
 # -*- coding: utf-8 -*-
-"""Run RASPA single-component GEMC calculation"""
+"""Example to submit one component RaspaGEMCWorkChain"""
 
-from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run_get_pk, run
-from aiida.orm import Code, Dict
-from aiida_raspa.calculations import RaspaCalculation  #pylint: disable=unused-import
+from aiida.engine import run
+from aiida.plugins import DataFactory
+from aiida.orm import Code, Dict, Float, Int
+from aiida_raspa.workchains import RaspaGEMCWorkChain
+
+# Data objects
+ParameterData = DataFactory('dict')  # pylint: disable=invalid-name
 
 
 @click.command('cli')
 @click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
-    """Prepare and submit RASPA calculation with components mixture."""
+def main(codelabel):
+    """Run base workchain"""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
         print("The code '{}' does not exist".format(codelabel))
         sys.exit(1)
 
+    print("Testing RASPA methane GEMC through RaspaGEMCWorkChain ...")
+
     # parameters
     parameters = Dict(
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 400,
-                "NumberOfInitializationCycles": 200,
-                "PrintEvery": 200,
+                "NumberOfCycles": 500,
+                "NumberOfInitializationCycles": 500,
+                "PrintEvery": 100,
                 "Forcefield": "GenericMOFs",
-                "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
                 "GibbsVolumeChangeProbability": 0.1,
             },
             "System": {
                 "box_one": {
                     "type": "Box",
-                    "BoxLengths": "25 25 25",
+                    "BoxLengths": "30 30 30",
                     "BoxAngles": "90 90 90",
                     "ExternalTemperature": 300.0,
                 },
                 "box_two": {
                     "type": "Box",
-                    "BoxLengths": "25 25 25",
+                    "BoxLengths": "30 30 30",
                     "BoxAngles": "90 90 90",
                     "ExternalTemperature": 300.0,
                 }
@@ -64,10 +68,14 @@ def main(codelabel, submit):
             },
         })
 
-    # Contructing builder
-    builder = code.get_builder()
-    builder.parameters = parameters
-    builder.metadata.options = {
+    conv_threshold = Float(0.90)
+    additional_cycle = Int(500)
+
+    # Constructing builder
+    builder = RaspaGEMCWorkChain.get_builder()
+    builder.raspa_base.raspa.code = code  # pylint: disable=no-member
+    builder.raspa_base.raspa.parameters = parameters  # pylint: disable=no-member
+    builder.raspa_base.raspa.metadata.options = { # pylint: disable=no-member
         "resources": {
             "num_machines": 1,
             "num_mpiprocs_per_machine": 1,
@@ -75,26 +83,10 @@ def main(codelabel, submit):
         "max_wallclock_seconds": 1 * 30 * 60,  # 30 min
         "withmpi": False,
     }
-    builder.metadata.dry_run = False
-    builder.metadata.store_provenance = True
+    builder.conv_threshold = conv_threshold
+    builder.additional_cycle = additional_cycle
 
-    if submit:
-        print("Testing RASPA GEMC with methane ...")
-        res, pk = run_get_pk(builder)
-        print("calculation pk: ", pk)
-        print("Total Energy average (box_one):",
-              res['output_parameters'].dict.box_one['general']['total_energy_average'])
-        print("Total Energy average (box_two):",
-              res['output_parameters'].dict.box_two['general']['total_energy_average'])
-        print("OK, calculation has completed successfully")
-    else:
-        print("Generating test input ...")
-        builder.metadata.dry_run = True
-        builder.metadata.store_provenance = False
-        run(builder)
-        print("Submission test successful")
-        print("In order to actually submit, add '--submit'")
-    print("-----")
+    run(builder)
 
 
 if __name__ == '__main__':

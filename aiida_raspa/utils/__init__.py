@@ -3,3 +3,10 @@
 from __future__ import absolute_import
 from .base_parser import parse_base_output
 from .base_input_generator import RaspaInput
+from .multiply_unitcell import multiply_unit_cell
+from .inspection_tools import (
+    check_widom_convergence,
+    check_gcmc_convergence,
+    check_gemc_convergence,
+    check_gemc_box,
+)

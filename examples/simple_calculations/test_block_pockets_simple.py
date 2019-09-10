@@ -10,7 +10,7 @@ from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict, SinglefileData
 from aiida.plugins import DataFactory
-from aiida_raspa.calculations import RaspaCalculation
+from aiida_raspa.calculations import RaspaCalculation  # pylint: disable=unused-import
 
 # data objects
 CifData = DataFactory('cif')  # pylint: disable=invalid-name
@@ -66,8 +66,16 @@ def main(codelabel, submit):
     # block pocket
     block_pocket_node = SinglefileData(file=os.path.join(pwd, 'files', 'block_pocket.block')).store()
 
-    # resources
-    options = {
+    # Contructing builder
+    builder = code.get_builder()
+    builder.framework = {
+        "tcc1rs": framework,
+    }
+    builder.block_pocket = {
+        "block_tcc1rs_methane": block_pocket_node,
+    }
+    builder.parameters = parameters
+    builder.metadata.options = {
         "resources": {
             "num_machines": 1,
             "num_mpiprocs_per_machine": 1,
@@ -75,35 +83,20 @@ def main(codelabel, submit):
         "max_wallclock_seconds": 1 * 30 * 60,  # 30 min
         "withmpi": False,
     }
-
-    # collecting all the inputs
-    inputs = {
-        "framework": {
-            "tcc1rs": framework,
-        },
-        "parameters": parameters,
-        "block_pocket": {
-            "block_tcc1rs_methane": block_pocket_node,
-        },
-        "code": code,
-        "metadata": {
-            "options": options,
-            "dry_run": False,
-            "store_provenance": True,
-        }
-    }
+    builder.metadata.dry_run = False
+    builder.metadata.store_provenance = True
 
     if submit:
         print("Testing RASPA with block pockets ...")
-        res, pk = run_get_pk(RaspaCalculation, **inputs)
+        res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
         print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
-        inputs["metadata"]["dry_run"] = True
-        inputs["metadata"]["store_provenance"] = False
-        run(RaspaCalculation, **inputs)
+        builder.metadata.dry_run = True
+        builder.metadata.store_provenance = False
+        run(builder)
         print("Submission test successful")
         print("In order to actually submit, add '--submit'")
 
