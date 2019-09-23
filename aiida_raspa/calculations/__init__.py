@@ -187,10 +187,15 @@ class RaspaCalculation(CalcJob):
                     system['ExternalPressure'] = 0
             elif system["type"] == "Framework":
                 system_or_box = system_name
-                (n_x, n_y, n_z) = tuple(map(int, system['UnitCells'].split()))
+                try:
+                    (n_x, n_y, n_z) = tuple(map(int, system['UnitCells'].split()))
+                except KeyError:
+                    (n_x, n_y, n_z) = 1, 1, 1
+
+            external_pressure = system['ExternalPressure'] if 'ExternalPressure' in system else 0
+
             new_fname = "restart_{}_{}.{}.{}_{:.6f}_{:.0f}".format(system_or_box, n_x, n_y, n_z,
-                                                                   system['ExternalTemperature'],
-                                                                   system['ExternalPressure'])
+                                                                   system['ExternalTemperature'], external_pressure)
             os.rename(os.path.join(current_folder, old_fname), os.path.join(current_folder, new_fname))
 
     def _handle_parent_folder(self, remote_copy_list):

@@ -11,7 +11,6 @@ from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict
 from aiida.plugins import DataFactory
-from aiida_raspa.calculations import RaspaCalculation  #pylint: disable=unused-import
 
 # data objects
 CifData = DataFactory('cif')  # pylint: disable=invalid-name

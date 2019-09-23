@@ -1,15 +1,66 @@
 # -*- coding: utf-8 -*-
 """RASPA inspection tools"""
+from __future__ import print_function
+from __future__ import absolute_import
+
+from six.moves import range
+
+from aiida.engine import calcfunction
+from aiida.orm import Dict, Int, Str, Float
+
+from .other_utilities import ErrorHandlerReport
 
 
-def check_widom_convergence(output_widom=None, comp_list=None, structure_label=None, conv_threshold=None):
+@calcfunction
+def modify_number_of_cycles(input_dict, additional_init_cycle, additional_prod_cycle):
+    """Modify number of cycles to improve the convergence."""
+    final_dict = input_dict.get_dict()
+    try:
+        final_dict["GeneralSettings"]["NumberOfInitializationCycles"] += additional_init_cycle.value
+    except KeyError:
+        final_dict["GeneralSettings"]["NumberOfInitializationCycles"] = additional_init_cycle.value
+
+    final_dict["GeneralSettings"]["NumberOfCycles"] += additional_prod_cycle.value
+
+    # It is a restart job the number of molecules need to be set to zero
+    for component in final_dict['Component'].values():
+        if "CreateNumberOfMolecules" in component:
+            if isinstance(component["CreateNumberOfMolecules"], dict):
+                for number in component["CreateNumberOfMolecules"]:
+                    component["CreateNumberOfMolecules"][number] = 0
+            else:
+                component["CreateNumberOfMolecules"] = 0
+
+    # Return final_dict dict only if it was modified
+    return input_dict if input_dict.get_dict() == final_dict else Dict(dict=final_dict)
+
+
+@calcfunction
+def increase_box_lenght(input_dict, box_name, box_length_current):
+    """Increase the box lenght to improve the convegence."""
+    import math
+
+    final_dict = input_dict.get_dict()
+    bx_length_old = [float(element) for element in final_dict["System"][box_name.value]["BoxLengths"].split()]
+
+    # We do the simulation in cubic box.
+    addition_length = abs(math.ceil(bx_length_old[0] - box_length_current.value))
+    box_one_length_new = [bx_length_old[i] + addition_length for i in range(3)]
+    final_dict["System"][box_name.value]["BoxLengths"] = "{} {} {}".format(*box_one_length_new)
+
+    return Dict(dict=final_dict)
+
+
+def check_widom_convergence(workchain, calc, conv_threshold=0.1, additional_cycle=0):
     """
-    Checks if a Widom particle insertion calculation is converged or not.
+    Checks whether a Widom particle insertion is converged.
     Checking is based on the error bar on Henry coefficient.
     """
+    output_widom = calc.outputs.output_parameters.get_dict()
+    structure_label = list(calc.get_incoming().nested()['framework'].keys())[0]
     conv_stat = []
 
-    for comp in comp_list:
+    for comp in calc.inputs.parameters['Component']:
         kh_average_comp = output_widom[structure_label]["components"][comp]["henry_coefficient_average"]
         kh_dev_comp = output_widom[structure_label]["components"][comp]["henry_coefficient_dev"]
 
@@ -19,23 +70,34 @@ def check_widom_convergence(output_widom=None, comp_list=None, structure_label=N
         else:
             conv_stat.append(False)
 
-    return conv_stat
+    if not all(conv_stat):
+        workchain.report("Widom particle insertion calculation is NOT converged: repeating with more trials...")
+        workchain.ctx.inputs.retrieved_parent_folder = calc.outputs['retrieved']
+        workchain.ctx.inputs.parameters = modify_number_of_cycles(workchain.ctx.inputs.parameters,
+                                                                  additional_init_cycle=Int(0),
+                                                                  additional_prod_cycle=Int(additional_cycle))
+        return ErrorHandlerReport(True, False)
+
+    return None
 
 
-def check_gcmc_convergence(output_gcmc=None, comp_list=None, structure_label=None, conv_threshold=None):
+def check_gcmc_convergence(workchain, calc, conv_threshold=0.1, additional_init_cycle=0, additional_prod_cycle=0):
     """
-    Checks if a GCMC calculation is converged or not.
+    Checks whether a GCMC calc is converged.
     Checking is based on the error bar on average loading.
     """
+    output_gcmc = calc.outputs.output_parameters.get_dict()
+    structure_label = list(calc.get_incoming().nested()['framework'].keys())[0]
     conv_stat = []
 
-    for comp in comp_list:
+    for comp in calc.inputs.parameters['Component']:
 
         loading_average_comp = output_gcmc[structure_label]["components"][comp]["loading_absolute_average"]
         loading_dev_comp = output_gcmc[structure_label]["components"][comp]["loading_absolute_dev"]
 
-        # TODO: It can happen for weekly adsorbed species. It is a temporary solution and #pylint: disable=fixme
+        # It can happen for weekly adsorbed species.
         # we need to think about a better way to handle it.
+        # Currently, if it happens for five iterations, workchain will not continue.
         if loading_average_comp == 0:
             conv_stat.append(False)
         else:
@@ -44,18 +106,28 @@ def check_gcmc_convergence(output_gcmc=None, comp_list=None, structure_label=Non
                 conv_stat.append(True)
             else:
                 conv_stat.append(False)
-    return conv_stat
+
+    if not all(conv_stat):
+        workchain.report("GCMC calculation is NOT converged: continuing from restart...")
+        workchain.ctx.inputs.retrieved_parent_folder = calc.outputs['retrieved']
+        workchain.ctx.inputs.parameters = modify_number_of_cycles(workchain.ctx.inputs.parameters,
+                                                                  additional_init_cycle=Int(additional_init_cycle),
+                                                                  additional_prod_cycle=Int(additional_prod_cycle))
+        return ErrorHandlerReport(True, False)
+
+    return None
 
 
-def check_gemc_convergence(output_gemc=None, comp_list=None, conv_threshold=None):
+def check_gemc_convergence(workchain, calc, conv_threshold=0.1, additional_init_cycle=0, additional_prod_cycle=0):
     """
-    Checks if a GEMC calculation is converged or not.
+    Checks whether a GCMC calc is converged.
     Checking is based on the error bar on average loading which is
     average number of molecules in each simulation box.
     """
+    output_gemc = calc.outputs.output_parameters.get_dict()
     conv_stat = []
 
-    for comp in comp_list:
+    for comp in calc.inputs.parameters['Component']:
         molec_per_box1_comp_average = output_gemc['box_one']["components"][comp]["loading_absolute_average"]
         molec_per_box2_comp_average = output_gemc['box_two']["components"][comp]["loading_absolute_average"]
         molec_per_box1_comp_dev = output_gemc['box_one']["components"][comp]["loading_absolute_dev"]
@@ -69,45 +141,54 @@ def check_gemc_convergence(output_gemc=None, comp_list=None, conv_threshold=None
         else:
             conv_stat.append(False)
 
-    return conv_stat
+    if not all(conv_stat):
+        workchain.report("GEMC calculation is NOT converged: continuing from restart...")
+        workchain.ctx.inputs.retrieved_parent_folder = calc.outputs['retrieved']
+        workchain.ctx.inputs.parameters = modify_number_of_cycles(workchain.ctx.inputs.parameters,
+                                                                  additional_init_cycle=Int(additional_init_cycle),
+                                                                  additional_prod_cycle=Int(additional_prod_cycle))
+        return ErrorHandlerReport(True, False)
+
+    return None
 
 
-# pylint: disable=too-many-branches
-def check_gemc_box(output_gemc=None, cutoff=None):
+def check_gemc_box(workchain, calc):
     """
-    Checks if each simulation box still satisfies minimum image convention
-    condition or not.
+    Checks whether each simulation box still satisfies minimum image convention.
     """
+    output_gemc = calc.outputs.output_parameters.get_dict()
+    cutoff = calc.inputs.parameters['GeneralSettings']['CutOff']
     box_one_stat = []
     box_two_stat = []
 
-    for box in ["box_one", "box_two"]:
-        if box == "box_one":
-            if output_gemc["box_one"]["general"]["box_ax_average"] > 2 * cutoff:
-                box_one_stat.append(True)
-            else:
-                box_one_stat.append(False)
-            if output_gemc["box_one"]["general"]["box_by_average"] > 2 * cutoff:
-                box_one_stat.append(True)
-            else:
-                box_one_stat.append(False)
-            if output_gemc["box_one"]["general"]["box_cz_average"] > 2 * cutoff:
-                box_one_stat.append(True)
-            else:
-                box_one_stat.append(False)
+    box_one_length_current = []
+    box_two_length_current = []
 
-        if box == "box_two":
-            if output_gemc["box_two"]["general"]["box_ax_average"] > 2 * cutoff:
-                box_two_stat.append(True)
-            else:
-                box_two_stat.append(False)
-            if output_gemc["box_two"]["general"]["box_by_average"] > 2 * cutoff:
-                box_two_stat.append(True)
-            else:
-                box_two_stat.append(False)
-            if output_gemc["box_two"]["general"]["box_cz_average"] > 2 * cutoff:
-                box_two_stat.append(True)
-            else:
-                box_two_stat.append(False)
+    for box_len_ave in ["box_ax_average", "box_by_average", "box_cz_average"]:
+        if output_gemc["box_one"]["general"][box_len_ave] > 2 * cutoff:
+            box_one_stat.append(True)
+        else:
+            box_one_stat.append(False)
+            box_one_length_current.append(output_gemc["box_one"]["general"][box_len_ave])
 
-    return box_one_stat, box_two_stat
+        if output_gemc["box_two"]["general"][box_len_ave] > 2 * cutoff:
+            box_two_stat.append(True)
+        else:
+            box_two_stat.append(False)
+            box_two_length_current.append(output_gemc["box_two"]["general"][box_len_ave])
+
+    if not all(box_one_stat and box_two_stat):
+        workchain.report("GEMC box is NOT converged: repeating with increase box...")
+        workchain.ctx.inputs.retrieved_parent_folder = calc.outputs['retrieved']
+        # Fixing the issue.
+        if not all(box_one_stat):
+            workchain.ctx.inputs.parameters = increase_box_lenght(workchain.ctx.inputs.parameters, Str("box_one"),
+                                                                  Float(box_one_length_current[0]))
+
+        if not all(box_two_stat):
+            workchain.ctx.inputs.parameters = increase_box_lenght(workchain.ctx.inputs.parameters, Str("box_two"),
+                                                                  Float(box_two_length_current[0]))
+
+        return ErrorHandlerReport(True, False)
+
+    return None
