@@ -9,6 +9,3 @@
 ##############################################################################
 """AiiDA-RASPA workchains"""
 from .base import RaspaBaseWorkChain
-from .widom_workchain import RaspaWidomWorkChain
-from .gcmc_workchain import RaspaGCMCWorkChain
-from .gemc_workchain import RaspaGEMCWorkChain
