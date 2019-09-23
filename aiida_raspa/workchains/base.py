@@ -18,10 +18,8 @@ class RaspaBaseWorkChain(BaseRestartWorkChain):
 
     @classmethod
     def define(cls, spec):
-        # yapf: disable
         super(RaspaBaseWorkChain, cls).define(spec)
         spec.expose_inputs(RaspaCalculation, namespace='raspa')
-
         spec.outline(
             cls.setup,
             while_(cls.should_run_calculation)(
@@ -30,7 +28,6 @@ class RaspaBaseWorkChain(BaseRestartWorkChain):
             ),
             cls.results,
         )
-
         spec.expose_outputs(RaspaCalculation)
 
     def setup(self):

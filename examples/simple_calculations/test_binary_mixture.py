@@ -9,7 +9,6 @@ import click
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict
-from aiida_raspa.calculations import RaspaCalculation  # pylint: disable=unused-import
 
 
 @click.command('cli')

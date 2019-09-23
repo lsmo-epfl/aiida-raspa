@@ -17,9 +17,9 @@ def multiply_unit_cell(cif, threshold):
     # Parsing cif
     struct = next(six.itervalues(cif.values.dictionary))
 
-    a = float(struct['_cell_length_a'])  # pylint: disable=invalid-name
-    b = float(struct['_cell_length_b'])  # pylint: disable=invalid-name
-    c = float(struct['_cell_length_c'])  # pylint: disable=invalid-name
+    a_vect = float(struct['_cell_length_a'])
+    b_vect = float(struct['_cell_length_b'])
+    c_vect = float(struct['_cell_length_c'])
 
     alpha = float(struct['_cell_angle_alpha']) * deg2rad
     beta = float(struct['_cell_angle_beta']) * deg2rad
@@ -30,9 +30,11 @@ def multiply_unit_cell(cif, threshold):
     # it is less robust.
     val = sqrt(1 - cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 2 * cos(alpha) * cos(beta) * cos(gamma))
     cell = np.zeros((3, 3))
-    cell[0, :] = [a, 0, 0]
-    cell[1, :] = [b * cos(gamma), b * sin(gamma), 0]
-    cell[2, :] = [c * cos(beta), c * (cos(alpha) - cos(beta) * cos(gamma)) / (sin(gamma)), c * val / sin(gamma)]
+    cell[0, :] = [a_vect, 0, 0]
+    cell[1, :] = [b_vect * cos(gamma), b_vect * sin(gamma), 0]
+    cell[2, :] = [
+        c_vect * cos(beta), c_vect * (cos(alpha) - cos(beta) * cos(gamma)) / (sin(gamma)), c_vect * val / sin(gamma)
+    ]
     cell = np.array(cell)
 
     # Computing perpendicular widths, as implemented in Raspa

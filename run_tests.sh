@@ -28,11 +28,10 @@ verdi run examples/simple_calculations/test_gemc_single_comp.py raspa --submit |
 verdi run examples/simple_calculations/test_gemc_single_comp_restart.py raspa --submit --previous_calc ${pk_gemc}
 
 # run workchains
-verdi run examples/workchains/test_base_workchain.py raspa
-verdi run examples/workchains/test_widom_workchain_1comp.py raspa
-verdi run examples/workchains/test_widom_workchain_2comp.py raspa
-verdi run examples/workchains/test_gcmc_workchain_2comp.py raspa
-verdi run examples/workchains/test_gemc_workchain_1comp.py raspa
+verdi run examples/workchains/test_base_workchain_widom_1comp.py raspa
+verdi run examples/workchains/test_base_workchain_widom_2comp.py raspa
+verdi run examples/workchains/test_base_workchain_gcmc_2comp.py raspa
+verdi run examples/workchains/test_base_workchain_gemc_1comp.py raspa
 
 # if all tests ran successfully
 echo "All tests have passed :-)"

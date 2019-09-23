@@ -3,33 +3,13 @@
 """Base implementation of `WorkChain` class that implements a simple automated restart mechanism for calculations."""
 from __future__ import absolute_import
 
-from collections import namedtuple
-
 from aiida import orm
 from aiida.orm import Dict
-from aiida.common import exceptions, AttributeDict, AiidaException
+from aiida.common import exceptions, AttributeDict
 from aiida.common.lang import override
-from aiida.engine import CalcJob, WorkChain, ToContext, append_, ExitCode
+from aiida.engine import CalcJob, WorkChain, ToContext, append_
 from aiida.plugins.entry_point import get_entry_point_names, load_entry_point
-
-
-class UnexpectedCalculationFailure(AiidaException):
-    """Raised when a calculation job has failed for an unexpected or unrecognized reason."""
-
-
-ErrorHandlerReport = namedtuple('ErrorHandlerReport', 'is_handled do_break exit_code')
-ErrorHandlerReport.__new__.__defaults__ = (False, False, ExitCode())
-"""
-A namedtuple to define an error handler report for a :class:`~aiida.engine.processes.workchains.workchain.WorkChain`.
-This namedtuple should be returned by an error handling method of a workchain instance if
-the condition of the error handling was met by the failure mode of the calculation.
-If the error was appriopriately handled, the 'is_handled' field should be set to `True`,
-and `False` otherwise. If no further error handling should be performed after this method
-the 'do_break' field should be set to `True`
-:param is_handled: boolean, set to `True` when an error was handled, default is `False`
-:param do_break: boolean, set to `True` if no further error handling should be performed, default is `False`
-:param exit_code: an instance of the :class:`~aiida.engine.processes.exit_code.ExitCode` tuple
-"""
+from aiida_raspa.utils import ErrorHandlerReport, UnexpectedCalculationFailure
 
 
 def prepare_process_inputs(process, inputs):
@@ -142,6 +122,8 @@ class BaseRestartWorkChain(WorkChain):
             help='Maximum number of iterations the work chain will restart the calculation to finish successfully.')
         spec.input('clean_workdir', valid_type=orm.Bool, default=orm.Bool(False),
             help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
+        spec.input_namespace('fixtures', valid_type=tuple, required=False,
+            help="Fixtures you want to apply to the outputs of every calculation.", dynamic=True)
         spec.exit_code(101, 'ERROR_MAXIMUM_ITERATIONS_EXCEEDED',
             message='The maximum number of iterations was exceeded.')
         spec.exit_code(102, 'ERROR_SECOND_CONSECUTIVE_UNHANDLED_FAILURE',
@@ -197,20 +179,22 @@ class BaseRestartWorkChain(WorkChain):
             # Perform an optional sanity check. If it returns an `ExitCode` this means an unrecoverable situation was
             # detected and the work chain should be aborted. If it returns `False`, the sanity check detected a problem
             # but has handled the problem and we should restart the cycle.
-            handler = self._handle_calculation_sanity_checks(calculation)  # pylint: disable=assignment-from-no-return
+            handler_report = self._handle_calculation_sanity_checks(calculation)  # pylint: disable=assignment-from-no-return
 
-            if isinstance(handler, ErrorHandlerReport) and handler.exit_code.status != 0:
-                # Sanity check returned a handler with an exit code that is non-zero, so we abort
+            if isinstance(handler_report, ErrorHandlerReport):
+                if handler_report.is_handled:
+                    # Reset the `unexpected_failure` since we are restarting the calculation loop
+                    # It could have been set to True in a previous iteration
+                    self.ctx.unexpected_failure = False
+                    self.report('{}<{}> finished successfully, but sanity check failed, restarting'.format(
+                        self.ctx.calc_name, calculation.pk))
+                    return
+
+                # Handler_report informs that a problem was detected but wasn't handled
                 self.report('{}<{}> finished successfully, but sanity check detected unrecoverable problem'.format(
                     self.ctx.calc_name, calculation.pk))
-                return handler.exit_code
+                return handler_report.exit_code
 
-            if isinstance(handler, ErrorHandlerReport):
-                # Reset the `unexpected_failure` since we are restarting the calculation loop
-                self.ctx.unexpected_failure = False
-                self.report('{}<{}> finished successfully, but sanity check failed, restarting'.format(
-                    self.ctx.calc_name, calculation.pk))
-                return
 
             self.report('{}<{}> completed successfully'.format(self.ctx.calc_name, calculation.pk))
             self.ctx.restart_calc = calculation
@@ -287,6 +271,40 @@ class BaseRestartWorkChain(WorkChain):
         :param calculation: the calculation whose outputs should be checked for consistency
         :return: `ErrorHandlerReport` if a new calculation should be launched or abort if it includes an exit code
         """
+        import importlib
+        is_handled = False # Becomes True if at least one error handling operation was performed and was sucessfull
+        not_handled = False # Becomes True if at least one error handling operation was performed and was NOT sucessfull
+
+        for fxtr in sorted(self.inputs.fixtures.keys()):
+            module_path, fixture_name, *args = self.inputs.fixtures[fxtr]
+            module = importlib.import_module(module_path)
+            fixture = getattr(module, fixture_name)
+            handler_report = fixture(self, calculation, *args)
+
+            # if the handler detected a problem and tried to fix it
+            if isinstance(handler_report, ErrorHandlerReport):
+
+                # if the problem was succesfully resolved
+                if handler_report.is_handled:
+                    is_handled = True
+
+                    # Break error checks if required
+                    if handler_report.do_break:
+                        return ErrorHandlerReport(True)
+
+                # If the problem wasn't resolved
+                else:
+                    not_handled = True
+                    # Specify latest not handled report for return
+                    latest_not_handled_report = handler_report
+
+        # If at least one error is handled, we consider that the calculation should be restarted
+        if is_handled:
+            return ErrorHandlerReport(True, True)
+
+        # If none of the handlers were sucesfull in fixing problems, we return the latest not handled report.
+        if not_handled:
+            return latest_not_handled_report
 
     def _handle_calculation_failure(self, calculation):
         """Call the attached error handlers if any to attempt to correct the cause of the calculation failure.
