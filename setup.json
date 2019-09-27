@@ -14,8 +14,9 @@
     ],
     "version": "1.0.0a1",
     "setup_requires": ["reentry"],
+    "reentry_register": true,
     "install_requires": [
-        "aiida_core >= 1.0.0b5"
+        "aiida_core >= 1.0.0b6"
     ],
     "entry_points": {
         "aiida.calculations": [
@@ -28,7 +29,6 @@
             "raspa.base = aiida_raspa.workchains:RaspaBaseWorkChain"
         ]
     },
-    "reentry_register": true,
     "data_files": [
         [".", ["setup.json"]]
     ],

@@ -194,8 +194,8 @@ class RaspaCalculation(CalcJob):
 
             external_pressure = system['ExternalPressure'] if 'ExternalPressure' in system else 0
 
-            new_fname = "restart_{}_{}.{}.{}_{:.6f}_{:.0f}".format(system_or_box, n_x, n_y, n_z,
-                                                                   system['ExternalTemperature'], external_pressure)
+            new_fname = "restart_{:s}_{:d}.{:d}.{:d}_{:f}_{:g}".format(system_or_box, n_x, n_y, n_z,
+                                                                       system['ExternalTemperature'], external_pressure)
             os.rename(os.path.join(current_folder, old_fname), os.path.join(current_folder, new_fname))
 
     def _handle_parent_folder(self, remote_copy_list):
