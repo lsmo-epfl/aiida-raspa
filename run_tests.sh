@@ -16,6 +16,7 @@ verdi run examples/simple_calculations/test_base.py                             
 verdi run examples/simple_calculations/test_binary_restart.py                       raspa --submit --previous_calc ${pk_base}
 verdi run examples/simple_calculations/test_restart.py                              raspa --submit --previous_calc ${pk_base}
 verdi run examples/simple_calculations/test_binary_mixture.py                       raspa --submit
+verdi run examples/simple_calculations/test_ff_files.py                             raspa --submit
 verdi run examples/simple_calculations/test_henry.py                                raspa --submit
 verdi run examples/simple_calculations/test_identity.py                             raspa --submit
 verdi run examples/simple_calculations/test_block_pockets_simple.py                 raspa --submit
