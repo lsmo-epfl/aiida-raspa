@@ -44,17 +44,17 @@ def main(codelabel, submit):
             },
             "Component": {
                 "propane": {
-                    "MoleculeName": "propane",
                     "MoleculeDefinition": "TraPPE",
                     "TranslationProbability": 1.0,
+                    "RotationProbability": 1.0,
                     "ReinsertionProbability": 1.0,
                     "SwapProbability": 1.0,
                     "CreateNumberOfMolecules": 30,
                 },
                 "butane": {
-                    "MoleculeName": "butane",
                     "MoleculeDefinition": "TraPPE",
                     "TranslationProbability": 1.0,
+                    "RotationProbability": 1.0,
                     "ReinsertionProbability": 1.0,
                     "SwapProbability": 1.0,
                     "CreateNumberOfMolecules": 30,
