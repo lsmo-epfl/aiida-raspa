@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Run RASPA calculation with components mixture."""
+"""Run RASPA calculation using Local force field"""
 
 from __future__ import print_function
 from __future__ import absolute_import
 import sys
+import os
 import click
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
-from aiida.orm import Code, Dict
+from aiida.orm import Code, Dict, CifData, SinglefileData
 
 
 @click.command('cli')
@@ -27,43 +28,57 @@ def main(codelabel, submit):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 400,
                 "NumberOfInitializationCycles": 200,
-                "PrintEvery": 200,
-                "Forcefield": "GenericMOFs",
+                "NumberOfCycles": 300,
+                "PrintEvery": 100,
+                "Forcefield": "Local",
+                "ChargeMethod": "Ewald",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
             },
             "System": {
-                "box_25_angstrom": {
-                    "type": "Box",
-                    "BoxLengths": "25 25 25",
+                "irmof_1": {
+                    "type": "Framework",
+                    "UnitCells": "1 1 1",
+                    "HeliumVoidFraction": 0.149,
                     "ExternalTemperature": 300.0,
-                    "ExternalPressure": 5e5,
-                },
+                    "ExternalPressure": 1e5,
+                }
             },
             "Component": {
-                "propane": {
-                    "MoleculeDefinition": "TraPPE",
+                "CO2": {
+                    "MoleculeDefinition": "Local",
+                    "MolFraction": 0.30,
                     "TranslationProbability": 1.0,
                     "RotationProbability": 1.0,
                     "ReinsertionProbability": 1.0,
                     "SwapProbability": 1.0,
-                    "CreateNumberOfMolecules": 30,
+                    "CreateNumberOfMolecules": 0,
                 },
-                "butane": {
-                    "MoleculeDefinition": "TraPPE",
+                "N2": {
+                    "MoleculeDefinition": "Local",
+                    "MolFraction": 0.70,
                     "TranslationProbability": 1.0,
                     "RotationProbability": 1.0,
                     "ReinsertionProbability": 1.0,
                     "SwapProbability": 1.0,
-                    "CreateNumberOfMolecules": 30,
+                    "CreateNumberOfMolecules": 0,
                 },
             },
         })
 
     # Contructing builder
+    pwd = os.path.dirname(os.path.realpath(__file__))
     builder = code.get_builder()
+    builder.framework = {
+        "irmof_1": CifData(file=os.path.join(pwd, 'files', 'IRMOF-1_eqeq.cif')),
+    }
+    builder.file = {
+        "file_1": SinglefileData(file=os.path.join(pwd, 'files', 'force_field_mixing_rules.def')),
+        "file_2": SinglefileData(file=os.path.join(pwd, 'files', 'pseudo_atoms.def')),
+        "file_3": SinglefileData(file=os.path.join(pwd, 'files', 'CO2.def')),
+        "file_4": SinglefileData(file=os.path.join(pwd, 'files', 'N2.def')),
+    }
     builder.parameters = parameters
     builder.metadata.options = {
         "resources": {
@@ -77,11 +92,14 @@ def main(codelabel, submit):
     builder.metadata.store_provenance = True
 
     if submit:
-        print("Testing RASPA with binary mixture (propane/butane) ...")
+        print("Testing RASPA CO2/N2 adsorption in IRMOF-1, using Local force field ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Total Energy average (box_25_angstrom):",
-              res['output_parameters'].dict.box_25_angstrom['general']['total_energy_average'])
+        print("CO2/N2 uptake ({:s}): {:.2f}/{:.2f} ".format(
+            res['output_parameters']["irmof_1"]["components"]['N2']["loading_absolute_unit"],
+            res['output_parameters']["irmof_1"]["components"]['CO2']["loading_absolute_average"],
+            res['output_parameters']["irmof_1"]["components"]['N2']["loading_absolute_average"],
+        ))
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
