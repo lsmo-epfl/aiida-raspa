@@ -68,15 +68,16 @@ def main(codelabel, submit):
         })
 
     # Contructing builder
+    pwd = os.path.dirname(os.path.realpath(__file__))
     builder = code.get_builder()
     builder.framework = {
-        "irmof_1": CifData(file=os.path.abspath('files/IRMOF-1_eqeq.cif')),
+        "irmof_1": CifData(file=os.path.join(pwd, 'files', 'IRMOF-1_eqeq.cif')),
     }
     builder.file = {
-        "file_1": SinglefileData(file=os.path.abspath('files/force_field_mixing_rules.def')),
-        "file_2": SinglefileData(file=os.path.abspath('files/pseudo_atoms.def')),
-        "file_3": SinglefileData(file=os.path.abspath('files/CO2.def')),
-        "file_4": SinglefileData(file=os.path.abspath('files/N2.def')),
+        "file_1": SinglefileData(file=os.path.join(pwd, 'files', 'force_field_mixing_rules.def')),
+        "file_2": SinglefileData(file=os.path.join(pwd, 'files', 'pseudo_atoms.def')),
+        "file_3": SinglefileData(file=os.path.join(pwd, 'files', 'CO2.def')),
+        "file_4": SinglefileData(file=os.path.join(pwd, 'files', 'N2.def')),
     }
     builder.parameters = parameters
     builder.metadata.options = {
