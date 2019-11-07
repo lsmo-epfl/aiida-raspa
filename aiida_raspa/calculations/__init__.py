@@ -41,7 +41,11 @@ class RaspaCalculation(CalcJob):
                              required=False,
                              dynamic=True,
                              help='Zeo++ block pocket file')
-        spec.input_namespace('file', valid_type=SinglefileData, required=False, help='Additional input file(s)')
+        spec.input_namespace('file',
+                             valid_type=SinglefileData,
+                             required=False,
+                             dynamic=True,
+                             help='Additional input file(s)')
         spec.input('settings', valid_type=Dict, required=False, help='Additional input parameters')
         spec.input('parent_folder',
                    valid_type=RemoteData,
