@@ -16,16 +16,8 @@ from aiida.plugins import DataFactory
 CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
+def example_base(raspa_code, submit=True):
     """Prepare and submit simple RASPA calculation."""
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
 
     # parameters
     parameters = Dict(
@@ -64,7 +56,7 @@ def main(codelabel, submit):
     framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'files', 'TCC1RS.cif'))
 
     # Contructing builder
-    builder = code.get_builder()
+    builder = raspa_code.get_builder()
     builder.framework = {
         "tcc1rs": framework,
     }
@@ -96,7 +88,19 @@ def main(codelabel, submit):
     print("-----")
 
 
+@click.command('cli')
+@click.argument('codelabel')
+def cli(codelabel):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_base(code)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

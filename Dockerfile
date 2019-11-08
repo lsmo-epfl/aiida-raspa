@@ -38,6 +38,8 @@ RUN ./configure --prefix=${RASPA2_DIR}
 RUN make
 RUN make install
 
+ENV PATH="/home/aiida/code/RASPA2_installed/bin/:${PATH}"
+
 # Populate reentry cache for aiida user https://pypi.python.org/pypi/reentry/
 RUN reentry scan
 
