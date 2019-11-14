@@ -1,5 +1,6 @@
 {
     "name": "aiida-raspa",
+    "version": "1.0.0a2",
     "author": "Aliaksandr Yakutovich",
     "author_email": "aliaksandr.yakutovich@epfl.ch",
     "description": "AiiDA plugin for RASPA code",
@@ -12,7 +13,6 @@
         "Programming Language :: Python :: 3.7",
         "Development Status :: 4 - Beta"
     ],
-    "version": "1.0.0a1",
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
