@@ -141,9 +141,10 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
             if "Conversion factor molecules/unit cell -> mol/kg:" in line:
                 res_cmp['conversion_factor_molec_uc_to_mol_kg'] = float(line.split()[6])
                 res_cmp['conversion_factor_molec_uc_to_mol_kg_unit'] = "(mol/kg)/(molec/uc)"
-            if "Conversion factor molecules/unit cell -> gr/gr:" in line:
-                res_cmp['conversion_factor_molec_uc_to_gr_gr'] = float(line.split()[6])
-                res_cmp['conversion_factor_molec_uc_to_gr_gr_unit'] = "(gr/gr)/(molec/uc)"
+            if "Conversion factor molecules/unit cell -> gr/gr:" in line \ # typo corrected in commit c1ad4de (Nov19)
+              or "Conversion factor molecules/unit cell -> mg/g:" in line:  # corrected line
+                res_cmp['conversion_factor_molec_uc_to_mg_g'] = float(line.split()[6])
+                res_cmp['conversion_factor_molec_uc_to_mg_g_unit'] = "(mg/g)/(molec/uc)"
             if "Conversion factor molecules/unit cell -> cm^3 STP/gr:" in line:
                 res_cmp['conversion_factor_molec_uc_to_cm3stp_gr'] = float(line.split()[7])
                 res_cmp['conversion_factor_molec_uc_to_cm3stp_gr_unit'] = "(cm^3_STP/gr)/(molec/uc)"
