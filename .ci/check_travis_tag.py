@@ -22,5 +22,5 @@ if not a:
     print("TRAVIS_TAG not set")
 
 elif a != b:
-    print("ERROR: TRAVIS_TAG and version are inconsistent: '%s' vs '%s'" % (a, b))
+    print("ERROR: TRAVIS_TAG and version are inconsistent: '{}' vs '{}'".format(a, b))
     sys.exit(3)
