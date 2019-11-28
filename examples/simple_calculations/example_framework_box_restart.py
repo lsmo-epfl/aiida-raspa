@@ -10,23 +10,15 @@ import click
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
-from aiida.orm import Code, Dict
+from aiida.orm import Code, Dict, load_node
 from aiida.plugins import DataFactory
 
 # data objects
 CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
+def example_framework_box_restart(raspa_code, previous_calc, submit=True):
     """Prepare and submit simple RASPA calculation."""
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
 
     # parameters
     parameters = Dict(
@@ -36,74 +28,48 @@ def main(codelabel, submit):
                 "NumberOfCycles": 400,
                 "NumberOfInitializationCycles": 200,
                 "PrintEvery": 100,
-                "ChargeMethod": "Ewald",
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
-                "CutOff": 12.0,
                 "WriteBinaryRestartFileEvery": 200,
             },
             "System": {
                 "tcc1rs": {
                     "type": "Framework",
                     "UnitCells": "1 1 1",
-                    "ExternalTemperature": 300.0,
-                    "ExternalPressure": 5e5,
+                    "ExternalTemperature": 350.0,
+                    "ExternalPressure": 6e5,
                     "HeliumVoidFraction": 0.149,
+                },
+                "box_25_angstroms": {
+                    "type": "Box",
+                    "BoxLengths": "25 25 25",
+                    "ExternalTemperature": 350.0,
+                    "ExternalPressure": 6e5,
                 },
             },
             "Component": {
-                "CO2": {
-                    "MoleculeDefinition": "TraPPE",
-                    "MolFraction": 0.15,
-                    "IdealGasRosenbluthWeight": 1.0,
-                    "TranslationProbability": 0.5,
-                    "RotationProbability": 0.5,
-                    "ReinsertionProbability": 0.5,
-                    "CBMCProbability": 0.5,
-                    "IdentityChangeProbability": 1.0,
-                    "IdentityChangesList": [0, 1, 2],
-                    "NumberOfIdentityChanges": 3,
-                    "SwapProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
-                },
                 "methane": {
                     "MoleculeDefinition": "TraPPE",
-                    "MolFraction": 0.1,
-                    "IdealGasRosenbluthWeight": 1.0,
                     "TranslationProbability": 0.5,
                     "ReinsertionProbability": 0.5,
-                    "CBMCProbability": 0.5,
-                    "IdentityChangeProbability": 1.0,
-                    "IdentityChangesList": [0, 1, 2],
-                    "NumberOfIdentityChanges": 3,
                     "SwapProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
-                },
-                "N2": {
-                    "MoleculeDefinition": "TraPPE",
-                    "MolFraction": 0.1,
-                    "IdealGasRosenbluthWeight": 1.0,
-                    "TranslationProbability": 0.5,
-                    "ReinsertionProbability": 0.5,
-                    "CBMCProbability": 0.5,
-                    "IdentityChangeProbability": 1.0,
-                    "IdentityChangesList": [0, 1, 2],
-                    "NumberOfIdentityChanges": 3,
-                    "SwapProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
-                },
+                }
             },
         })
 
     # framework
-    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'files', 'TCC1RS.cif'))
+    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'files', 'TCC1RS.cif'))
+
+    # restart file
+    retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
 
     # Contructing builder
-    builder = code.get_builder()
+    builder = raspa_code.get_builder()
     builder.framework = {
         "tcc1rs": framework,
     }
     builder.parameters = parameters
+    builder.retrieved_parent_folder = retrieved_parent_folder
     builder.metadata.options = {
         "resources": {
             "num_machines": 1,
@@ -116,10 +82,12 @@ def main(codelabel, submit):
     builder.metadata.store_provenance = True
 
     if submit:
-        print("Testing RASPA with changing identity ...")
+        print("Testing RASPA with framework and box, restart ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
         print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
+        print("Total Energy average (box_25_angstroms):",
+              res['output_parameters'].dict.box_25_angstroms['general']['total_energy_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
@@ -131,7 +99,21 @@ def main(codelabel, submit):
     print("-----")
 
 
+@click.command('cli')
+@click.argument('codelabel')
+@click.option('--previous_calc', '-p', required=True, type=int, help='PK of example_framework_box.py calculation')
+@click.option('--submit', is_flag=True, help='Actually submit calculation')
+def cli(codelabel, previous_calc, submit):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_framework_box_restart(code, previous_calc, submit)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

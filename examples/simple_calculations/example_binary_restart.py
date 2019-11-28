@@ -1,6 +1,5 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""Run simple RASPA calculation."""
+"""Restart from simple RASPA calculation."""
 
 from __future__ import print_function
 from __future__ import absolute_import
@@ -17,17 +16,8 @@ from aiida.plugins import DataFactory
 CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--previous_calc', '-p', required=True, type=int, help='PK of test_raspa_framework_box.py calculation')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, previous_calc, submit):
-    """Prepare and submit simple RASPA calculation."""
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
+def example_binary_restart(raspa_code, previous_calc, submit=True):
+    """Prepare and submit restart from simple RASPA calculation."""
 
     # parameters
     parameters = Dict(
@@ -36,24 +26,18 @@ def main(codelabel, previous_calc, submit):
                 "SimulationType": "MonteCarlo",
                 "NumberOfCycles": 400,
                 "NumberOfInitializationCycles": 200,
-                "PrintEvery": 100,
+                "PrintEvery": 200,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
-                "WriteBinaryRestartFileEvery": 200,
+                "CutOff": 12.0,
             },
             "System": {
                 "tcc1rs": {
                     "type": "Framework",
                     "UnitCells": "1 1 1",
-                    "ExternalTemperature": 350.0,
-                    "ExternalPressure": 6e5,
                     "HeliumVoidFraction": 0.149,
-                },
-                "box_25_angstroms": {
-                    "type": "Box",
-                    "BoxLengths": "25 25 25",
-                    "ExternalTemperature": 350.0,
-                    "ExternalPressure": 6e5,
+                    "ExternalTemperature": 300.0,
+                    "ExternalPressure": 5e5,
                 },
             },
             "Component": {
@@ -62,23 +46,24 @@ def main(codelabel, previous_calc, submit):
                     "TranslationProbability": 0.5,
                     "ReinsertionProbability": 0.5,
                     "SwapProbability": 1.0,
+                    "CreateNumberOfMolecules": 0,
                 }
             },
         })
 
     # framework
-    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'files', 'TCC1RS.cif'))
+    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'files', 'TCC1RS.cif'))
 
     # restart file
-    retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
+    parent_folder = load_node(previous_calc).outputs.remote_folder
 
     # Contructing builder
-    builder = code.get_builder()
+    builder = raspa_code.get_builder()
     builder.framework = {
         "tcc1rs": framework,
     }
     builder.parameters = parameters
-    builder.retrieved_parent_folder = retrieved_parent_folder
+    builder.parent_folder = parent_folder
     builder.metadata.options = {
         "resources": {
             "num_machines": 1,
@@ -91,24 +76,36 @@ def main(codelabel, previous_calc, submit):
     builder.metadata.store_provenance = True
 
     if submit:
-        print("Testing RASPA with framework and box, restart ...")
+        print("Testing RASPA with simple input, binary restart ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
         print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
-        print("Total Energy average (box_25_angstroms):",
-              res['output_parameters'].dict.box_25_angstroms['general']['total_energy_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
         builder.metadata.dry_run = True
         builder.metadata.store_provenance = False
         run(builder)
-        print("submission test successful")
+        print("Submission test successful")
         print("In order to actually submit, add '--submit'")
     print("-----")
 
 
+@click.command('cli')
+@click.argument('codelabel')
+@click.option('--previous_calc', '-p', required=True, type=int, help='PK of example_raspa_base.py calculation')
+@click.option('--submit', is_flag=True, help='Actually submit calculation')
+def cli(codelabel, previous_calc, submit):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_binary_restart(code, previous_calc, submit)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

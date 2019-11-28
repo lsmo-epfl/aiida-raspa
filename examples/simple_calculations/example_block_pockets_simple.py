@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Run simple RASPA calculation."""
-
+"""Run RASPA calculation with blocked pockets."""
 from __future__ import print_function
 from __future__ import absolute_import
 import os
@@ -9,15 +8,15 @@ import click
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
-from aiida.orm import Code, Dict
+from aiida.orm import Code, Dict, SinglefileData
 from aiida.plugins import DataFactory
 
 # data objects
 CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 
-def example_base(raspa_code, submit=True):
-    """Prepare and submit simple RASPA calculation."""
+def example_block_pockets(raspa_code, submit=True):
+    """Prepare and submit RASPA calculation with blocked pockets."""
 
     # parameters
     parameters = Dict(
@@ -30,7 +29,6 @@ def example_base(raspa_code, submit=True):
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "WriteBinaryRestartFileEvery": 200,
             },
             "System": {
                 "tcc1rs": {
@@ -39,7 +37,7 @@ def example_base(raspa_code, submit=True):
                     "HeliumVoidFraction": 0.149,
                     "ExternalTemperature": 300.0,
                     "ExternalPressure": 5e5,
-                },
+                }
             },
             "Component": {
                 "methane": {
@@ -48,17 +46,25 @@ def example_base(raspa_code, submit=True):
                     "ReinsertionProbability": 0.5,
                     "SwapProbability": 1.0,
                     "CreateNumberOfMolecules": 0,
+                    "BlockPocketsFileName": "block_tcc1rs_methane",
                 }
             },
         })
 
     # framework
-    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'files', 'TCC1RS.cif'))
+    pwd = os.path.dirname(os.path.realpath(__file__))
+    framework = CifData(file=os.path.join(pwd, '..', 'files', 'TCC1RS.cif'))
+
+    # block pocket
+    block_pocket_node = SinglefileData(file=os.path.join(pwd, '..', 'files', 'block_pocket.block')).store()
 
     # Contructing builder
     builder = raspa_code.get_builder()
     builder.framework = {
         "tcc1rs": framework,
+    }
+    builder.block_pocket = {
+        "block_tcc1rs_methane": block_pocket_node,
     }
     builder.parameters = parameters
     builder.metadata.options = {
@@ -73,7 +79,7 @@ def example_base(raspa_code, submit=True):
     builder.metadata.store_provenance = True
 
     if submit:
-        print("Testing RASPA with simple input ...")
+        print("Testing RASPA with block pockets ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
         print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
@@ -85,19 +91,19 @@ def example_base(raspa_code, submit=True):
         run(builder)
         print("Submission test successful")
         print("In order to actually submit, add '--submit'")
-    print("-----")
 
 
 @click.command('cli')
 @click.argument('codelabel')
-def cli(codelabel):
+@click.option('--submit', is_flag=True, help='Actually submit calculation')
+def cli(codelabel, submit):
     """Click interface"""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
         print("The code '{}' does not exist".format(codelabel))
         sys.exit(1)
-    example_base(code)
+    example_block_pockets(code, submit)
 
 
 if __name__ == '__main__':

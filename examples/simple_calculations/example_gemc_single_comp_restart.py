@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Run RASPA single-component GEMC calculation"""
+"""Run RASPA single-component GEMC calculation -- Restart"""
 
 from __future__ import print_function
 from __future__ import absolute_import
@@ -8,19 +8,11 @@ import click
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
-from aiida.orm import Code, Dict
+from aiida.orm import Code, Dict, load_node
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
+def example_gemc_single_comp(raspa_code, previous_calc, submit):
     """Prepare and submit RASPA calculation with components mixture."""
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
 
     # parameters
     parameters = Dict(
@@ -40,13 +32,13 @@ def main(codelabel, submit):
                     "type": "Box",
                     "BoxLengths": "25 25 25",
                     "BoxAngles": "90 90 90",
-                    "ExternalTemperature": 300.0,
+                    "ExternalTemperature": 200.0,
                 },
                 "box_two": {
                     "type": "Box",
                     "BoxLengths": "25 25 25",
                     "BoxAngles": "90 90 90",
-                    "ExternalTemperature": 300.0,
+                    "ExternalTemperature": 200.0,
                 }
             },
             "Component": {
@@ -56,16 +48,20 @@ def main(codelabel, submit):
                     "ReinsertionProbability": 1.0,
                     "GibbsSwapProbability": 1.0,
                     "CreateNumberOfMolecules": {
-                        "box_one": 150,
-                        "box_two": 150,
+                        "box_one": 50,
+                        "box_two": 50,
                     },
                 },
             },
         })
 
+    # restart file
+    retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
+
     # Contructing builder
-    builder = code.get_builder()
+    builder = raspa_code.get_builder()
     builder.parameters = parameters
+    builder.retrieved_parent_folder = retrieved_parent_folder
     builder.metadata.options = {
         "resources": {
             "num_machines": 1,
@@ -78,7 +74,7 @@ def main(codelabel, submit):
     builder.metadata.store_provenance = True
 
     if submit:
-        print("Testing RASPA GEMC with methane ...")
+        print("Testing RASPA GEMC with methane (Restart)...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
         print("Total Energy average (box_one):",
@@ -96,7 +92,21 @@ def main(codelabel, submit):
     print("-----")
 
 
+@click.command('cli')
+@click.argument('codelabel')
+@click.option('--previous_calc', '-p', required=True, type=int, help='PK of example_framework_box.py calculation')
+@click.option('--submit', is_flag=True, help='Actually submit calculation')
+def cli(codelabel, previous_calc, submit):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_gemc_single_comp(code, previous_calc, submit)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF
