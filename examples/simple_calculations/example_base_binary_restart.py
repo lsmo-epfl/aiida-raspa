@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import os
 import sys
 import click
+import pytest
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
@@ -16,8 +17,12 @@ from aiida.plugins import DataFactory
 CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 
-def example_binary_restart(raspa_code, previous_calc, submit=True):
+def example_binary_restart(raspa_code, base_calc_pk=None, submit=True):
     """Prepare and submit restart from simple RASPA calculation."""
+
+    # This line is needed for tests only
+    if base_calc_pk is None:
+        base_calc_pk = pytest.base_calc_pk  # pylint: disable=no-member
 
     # parameters
     parameters = Dict(
@@ -55,7 +60,7 @@ def example_binary_restart(raspa_code, previous_calc, submit=True):
     framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'files', 'TCC1RS.cif'))
 
     # restart file
-    parent_folder = load_node(previous_calc).outputs.remote_folder
+    parent_folder = load_node(base_calc_pk).outputs.remote_folder
 
     # Contructing builder
     builder = raspa_code.get_builder()
@@ -93,7 +98,7 @@ def example_binary_restart(raspa_code, previous_calc, submit=True):
 
 @click.command('cli')
 @click.argument('codelabel')
-@click.option('--previous_calc', '-p', required=True, type=int, help='PK of example_raspa_base.py calculation')
+@click.option('--previous_calc', '-p', required=True, type=int, help='PK of example_base.py calculation')
 @click.option('--submit', is_flag=True, help='Actually submit calculation')
 def cli(codelabel, previous_calc, submit):
     """Click interface"""

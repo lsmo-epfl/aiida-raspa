@@ -5,14 +5,19 @@ from __future__ import print_function
 from __future__ import absolute_import
 import sys
 import click
+import pytest
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict, load_node
 
 
-def example_gemc_single_comp(raspa_code, previous_calc, submit):
+def example_gemc_single_comp(raspa_code, gemc_single_comp_calc_pk=None, submit=True):
     """Prepare and submit RASPA calculation with components mixture."""
+
+    # This line is needed for tests only
+    if gemc_single_comp_calc_pk is None:
+        gemc_single_comp_calc_pk = pytest.gemc_single_comp_calc_pk  # pylint: disable=no-member
 
     # parameters
     parameters = Dict(
@@ -56,7 +61,7 @@ def example_gemc_single_comp(raspa_code, previous_calc, submit):
         })
 
     # restart file
-    retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
+    retrieved_parent_folder = load_node(gemc_single_comp_calc_pk).outputs.retrieved
 
     # Contructing builder
     builder = raspa_code.get_builder()

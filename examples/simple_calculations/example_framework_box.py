@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import os
 import sys
 import click
+import pytest
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
@@ -90,6 +91,7 @@ def example_framework_box(raspa_code, submit=True):
         print("Total Energy average (box_25_angstroms):",
               res['output_parameters'].dict.box_25_angstroms['general']['total_energy_average'])
         print("OK, calculation has completed successfully")
+        pytest.framework_box_calc_pk = pk
     else:
         print("Generating test input ...")
         builder.metadata.dry_run = True

@@ -5,6 +5,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 import sys
 import click
+import pytest
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
@@ -78,6 +79,7 @@ def example_gemc_single_comp(raspa_code, submit=True):
         print("Total Energy average (box_two):",
               res['output_parameters'].dict.box_two['general']['total_energy_average'])
         print("OK, calculation has completed successfully")
+        pytest.gemc_single_comp_calc_pk = pk
     else:
         print("Generating test input ...")
         builder.metadata.dry_run = True

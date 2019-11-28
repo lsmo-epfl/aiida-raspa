@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import os
 import sys
 import click
+import pytest
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
@@ -78,6 +79,7 @@ def example_base(raspa_code, submit=True):
         print("calculation pk: ", pk)
         print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
         print("OK, calculation has completed successfully")
+        pytest.base_calc_pk = pk
     else:
         print("Generating test input ...")
         builder.metadata.dry_run = True

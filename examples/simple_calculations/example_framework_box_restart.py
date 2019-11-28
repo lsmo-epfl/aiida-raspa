@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """Run simple RASPA calculation."""
 
@@ -7,6 +6,7 @@ from __future__ import absolute_import
 import os
 import sys
 import click
+import pytest
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
@@ -17,8 +17,12 @@ from aiida.plugins import DataFactory
 CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 
-def example_framework_box_restart(raspa_code, previous_calc, submit=True):
+def example_framework_box_restart(raspa_code, framework_box_calc_pk=None, submit=True):
     """Prepare and submit simple RASPA calculation."""
+
+    # This line is needed for tests only
+    if framework_box_calc_pk is None:
+        framework_box_calc_pk = pytest.framework_box_calc_pk  # pylint: disable=no-member
 
     # parameters
     parameters = Dict(
@@ -61,7 +65,7 @@ def example_framework_box_restart(raspa_code, previous_calc, submit=True):
     framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'files', 'TCC1RS.cif'))
 
     # restart file
-    retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
+    retrieved_parent_folder = load_node(framework_box_calc_pk).outputs.retrieved
 
     # Contructing builder
     builder = raspa_code.get_builder()

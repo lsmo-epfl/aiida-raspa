@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """Run RASPA calculation to compute Henry coefficient."""
 from __future__ import print_function
