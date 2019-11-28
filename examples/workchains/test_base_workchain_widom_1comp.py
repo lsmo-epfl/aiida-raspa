@@ -80,9 +80,9 @@ def main(codelabel):
         "block_tcc1rs_xenon": block_pocket_node1,
     }
 
-    # Add fixtures that could handle physics-related problems.
-    builder.fixtures = {
-        'fixture_001': ('aiida_raspa.utils', 'check_widom_convergence', 0.10, 2000),
+    # Add fixers that could handle physics-related problems.
+    builder.fixers = {
+        'fixer_001': ('aiida_raspa.utils', 'check_widom_convergence', 0.10, 2000),
     }
 
     # Specifying the scheduler options
