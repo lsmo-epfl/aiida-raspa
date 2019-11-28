@@ -76,10 +76,10 @@ def main(codelabel):
     # Specifying the input parameters
     builder.raspa.parameters = parameters
 
-    # Add fixtures that could handle physics-related problems.
-    builder.fixtures = {
-        'fixture_001': ('aiida_raspa.utils', 'check_gemc_box'),
-        'fixture_002': ('aiida_raspa.utils', 'check_gemc_convergence', 0.8, 200, 200),
+    # Add fixers that could handle physics-related problems.
+    builder.fixers = {
+        'fixer_001': ('aiida_raspa.utils', 'check_gemc_box'),
+        'fixer_002': ('aiida_raspa.utils', 'check_gemc_convergence', 0.8, 200, 200),
     }
 
     # Specifying the scheduler options

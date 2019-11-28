@@ -101,9 +101,9 @@ def main(codelabel):
         "irmof_1_xenon": block_pocket_node2,
     }
 
-    # Add fixtures that could handle physics-related problems.
-    builder.fixtures = {
-        'fixture_001': ('aiida_raspa.utils', 'check_gcmc_convergence', 0.10, 2000, 2000),
+    # Add fixers that could handle physics-related problems.
+    builder.fixers = {
+        'fixer_001': ('aiida_raspa.utils', 'check_gcmc_convergence', 0.10, 2000, 2000),
     }
 
     # Specifying the scheduler options
