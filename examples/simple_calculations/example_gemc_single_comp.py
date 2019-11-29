@@ -5,22 +5,15 @@ from __future__ import print_function
 from __future__ import absolute_import
 import sys
 import click
+import pytest
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
+def example_gemc_single_comp(raspa_code, submit=True):
     """Prepare and submit RASPA calculation with components mixture."""
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
 
     # parameters
     parameters = Dict(
@@ -64,7 +57,7 @@ def main(codelabel, submit):
         })
 
     # Contructing builder
-    builder = code.get_builder()
+    builder = raspa_code.get_builder()
     builder.parameters = parameters
     builder.metadata.options = {
         "resources": {
@@ -86,6 +79,7 @@ def main(codelabel, submit):
         print("Total Energy average (box_two):",
               res['output_parameters'].dict.box_two['general']['total_energy_average'])
         print("OK, calculation has completed successfully")
+        pytest.gemc_single_comp_calc_pk = pk
     else:
         print("Generating test input ...")
         builder.metadata.dry_run = True
@@ -96,7 +90,20 @@ def main(codelabel, submit):
     print("-----")
 
 
+@click.command('cli')
+@click.argument('codelabel')
+@click.option('--submit', is_flag=True, help='Actually submit calculation')
+def cli(codelabel, submit):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_gemc_single_comp(code, submit)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

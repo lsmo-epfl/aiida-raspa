@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Run simple RASPA calculation."""
-
+"""Run RASPA calculation to compute Henry coefficient."""
 from __future__ import print_function
 from __future__ import absolute_import
 import os
@@ -9,23 +8,15 @@ import click
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
-from aiida.orm import Code, Dict
 from aiida.plugins import DataFactory
+from aiida.orm import Code, Dict
 
 # data objects
 CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
-    """Prepare and submit simple RASPA calculation."""
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
+def example_henry(raspa_code, submit=True):
+    """Prepare and submit simple RASPA calculation to compute Henry coefficient."""
 
     # parameters
     parameters = Dict(
@@ -33,12 +24,10 @@ def main(codelabel, submit):
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
                 "NumberOfCycles": 400,
-                "NumberOfInitializationCycles": 200,
                 "PrintEvery": 200,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "WriteBinaryRestartFileEvery": 200,
             },
             "System": {
                 "tcc1rs": {
@@ -46,25 +35,23 @@ def main(codelabel, submit):
                     "UnitCells": "1 1 1",
                     "HeliumVoidFraction": 0.149,
                     "ExternalTemperature": 300.0,
-                    "ExternalPressure": 5e5,
-                },
+                }
             },
             "Component": {
                 "methane": {
                     "MoleculeDefinition": "TraPPE",
-                    "TranslationProbability": 0.5,
-                    "ReinsertionProbability": 0.5,
-                    "SwapProbability": 1.0,
+                    "WidomProbability": 1.0,
                     "CreateNumberOfMolecules": 0,
                 }
             },
         })
 
     # framework
-    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'files', 'TCC1RS.cif'))
+    pwd = os.path.dirname(os.path.realpath(__file__))
+    framework = CifData(file=os.path.join(pwd, '..', 'files', 'TCC1RS.cif'))
 
     # Contructing builder
-    builder = code.get_builder()
+    builder = raspa_code.get_builder()
     builder.framework = {
         "tcc1rs": framework,
     }
@@ -81,22 +68,36 @@ def main(codelabel, submit):
     builder.metadata.store_provenance = True
 
     if submit:
-        print("Testing RASPA with simple input ...")
+        print("Testing RASPA on computing Henry coefficient ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
+        print("Average Henry coefficient (methane in tcc1rs):",
+              res['output_parameters'].dict.tcc1rs['components']['methane']['henry_coefficient_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
         builder.metadata.dry_run = True
         builder.metadata.store_provenance = False
         run(builder)
-        print("Submission test successful")
+        print("submission test successful")
         print("In order to actually submit, add '--submit'")
     print("-----")
 
 
+@click.command('cli')
+@click.argument('codelabel')
+@click.option('--submit', is_flag=True, help='Actually submit calculation')
+def cli(codelabel, submit):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_henry(code, submit)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

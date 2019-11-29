@@ -5,23 +5,19 @@ from __future__ import print_function
 from __future__ import absolute_import
 import sys
 import click
+import pytest
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict, load_node
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--previous_calc', '-p', required=True, type=int, help='PK of test_gemc_single_comp.py calculation')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, previous_calc, submit):
+def example_gemc_single_comp(raspa_code, gemc_single_comp_calc_pk=None, submit=True):
     """Prepare and submit RASPA calculation with components mixture."""
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
+
+    # This line is needed for tests only
+    if gemc_single_comp_calc_pk is None:
+        gemc_single_comp_calc_pk = pytest.gemc_single_comp_calc_pk  # pylint: disable=no-member
 
     # parameters
     parameters = Dict(
@@ -65,10 +61,10 @@ def main(codelabel, previous_calc, submit):
         })
 
     # restart file
-    retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
+    retrieved_parent_folder = load_node(gemc_single_comp_calc_pk).outputs.retrieved
 
     # Contructing builder
-    builder = code.get_builder()
+    builder = raspa_code.get_builder()
     builder.parameters = parameters
     builder.retrieved_parent_folder = retrieved_parent_folder
     builder.metadata.options = {
@@ -101,7 +97,21 @@ def main(codelabel, previous_calc, submit):
     print("-----")
 
 
+@click.command('cli')
+@click.argument('codelabel')
+@click.option('--previous_calc', '-p', required=True, type=int, help='PK of example_framework_box.py calculation')
+@click.option('--submit', is_flag=True, help='Actually submit calculation')
+def cli(codelabel, previous_calc, submit):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_gemc_single_comp(code, previous_calc, submit)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF
