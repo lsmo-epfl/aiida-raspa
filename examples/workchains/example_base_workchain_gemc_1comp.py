@@ -12,18 +12,10 @@ from aiida.orm import Code, Dict
 from aiida_raspa.workchains import RaspaBaseWorkChain
 
 
-@click.command('cli')
-@click.argument('codelabel')
-def main(codelabel):
-    """Run base workchain"""
+def example_base_workchain_gemc(raspa_code):
+    """Run the base workchain for GEMC calculation."""
 
     # pylint: disable=no-member
-
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
 
     print("Testing RASPA methane GEMC through RaspaBaseWorkChain ...")
 
@@ -71,15 +63,15 @@ def main(codelabel):
     builder = RaspaBaseWorkChain.get_builder()
 
     # Specifying the code
-    builder.raspa.code = code
+    builder.raspa.code = raspa_code
 
     # Specifying the input parameters
     builder.raspa.parameters = parameters
 
-    # Add fixtures that could handle physics-related problems.
-    builder.fixtures = {
-        'fixture_001': ('aiida_raspa.utils', 'check_gemc_box'),
-        'fixture_002': ('aiida_raspa.utils', 'check_gemc_convergence', 0.8, 200, 200),
+    # Add fixers that could handle physics-related problems.
+    builder.fixers = {
+        'fixer_001': ('aiida_raspa.utils', 'check_gemc_box'),
+        'fixer_002': ('aiida_raspa.utils', 'check_gemc_convergence', 0.8, 200, 200),
     }
 
     # Specifying the scheduler options
@@ -95,7 +87,19 @@ def main(codelabel):
     run(builder)
 
 
+@click.command('cli')
+@click.argument('codelabel')
+def cli(codelabel):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_base_workchain_gemc(code)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

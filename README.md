@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/yakutovicha/aiida-raspa.svg?branch=develop)](https://travis-ci.org/yakutovicha/aiida-raspa)
+[![Coverage Status](https://coveralls.io/repos/github/yakutovicha/aiida-raspa/badge.svg?branch=develop)](https://coveralls.io/github/yakutovicha/aiida-raspa?branch=develop)
 [![PyPI version](https://badge.fury.io/py/aiida-raspa.svg)](https://badge.fury.io/py/aiida-raspa)
 
 # aiida-raspa

@@ -13,18 +13,10 @@ from aiida.orm import CifData, Code, Dict, SinglefileData
 from aiida_raspa.workchains import RaspaBaseWorkChain
 
 
-@click.command('cli')
-@click.argument('codelabel')
-def main(codelabel):
-    """Run base workchain"""
+def example_base_workchain_widom_2(raspa_code):
+    """Run base workchain for widom insertion calculation (1 component)."""
 
     # pylint: disable=no-member
-
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
 
     print("Testing RASPA Xenon and Krypton widom insertion through RaspaBaseWorkChain ...")
 
@@ -62,19 +54,17 @@ def main(codelabel):
 
     # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
-    structure = CifData(file=os.path.join(pwd, '..', 'simple_calculations', 'files', 'TCC1RS.cif'))
+    structure = CifData(file=os.path.join(pwd, '..', 'files', 'TCC1RS.cif'))
     structure_label = structure.filename[:-4].lower()
 
-    block_pocket_node1 = SinglefileData(
-        file=os.path.join(pwd, '..', 'simple_calculations', 'files', 'block_pocket.block')).store()
-    block_pocket_node2 = SinglefileData(
-        file=os.path.join(pwd, '..', 'simple_calculations', 'files', 'block_pocket.block')).store()
+    block_pocket_node1 = SinglefileData(file=os.path.join(pwd, '..', 'files', 'block_pocket.block')).store()
+    block_pocket_node2 = SinglefileData(file=os.path.join(pwd, '..', 'files', 'block_pocket.block')).store()
 
     # Constructing builder
     builder = RaspaBaseWorkChain.get_builder()
 
     # Specifying the code
-    builder.raspa.code = code
+    builder.raspa.code = raspa_code
 
     # Specifying the framework
     builder.raspa.framework = {
@@ -90,9 +80,9 @@ def main(codelabel):
         "block_tcc1rs_xenon": block_pocket_node2,
     }
 
-    # Add fixtures that could handle physics-related problems.
-    builder.fixtures = {
-        'fixture_001': ('aiida_raspa.utils', 'check_widom_convergence', 0.1, 2000),
+    # Add fixers that could handle physics-related problems.
+    builder.fixers = {
+        'fixer_001': ('aiida_raspa.utils', 'check_widom_convergence', 0.1, 2000),
     }
 
     # Specifying the scheduler options
@@ -108,7 +98,19 @@ def main(codelabel):
     run(builder)
 
 
+@click.command('cli')
+@click.argument('codelabel')
+def cli(codelabel):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_base_workchain_widom_2(code)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

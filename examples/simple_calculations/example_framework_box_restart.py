@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """Run simple RASPA calculation."""
 
@@ -7,6 +6,7 @@ from __future__ import absolute_import
 import os
 import sys
 import click
+import pytest
 
 from aiida.common import NotExistent
 from aiida.engine import run_get_pk, run
@@ -17,17 +17,12 @@ from aiida.plugins import DataFactory
 CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--previous_calc', '-p', required=True, type=int, help='PK of test_raspa_framework_box.py calculation')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, previous_calc, submit):
+def example_framework_box_restart(raspa_code, framework_box_calc_pk=None, submit=True):
     """Prepare and submit simple RASPA calculation."""
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
+
+    # This line is needed for tests only
+    if framework_box_calc_pk is None:
+        framework_box_calc_pk = pytest.framework_box_calc_pk  # pylint: disable=no-member
 
     # parameters
     parameters = Dict(
@@ -67,13 +62,13 @@ def main(codelabel, previous_calc, submit):
         })
 
     # framework
-    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'files', 'TCC1RS.cif'))
+    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'files', 'TCC1RS.cif'))
 
     # restart file
-    retrieved_parent_folder = load_node(previous_calc).outputs.retrieved
+    retrieved_parent_folder = load_node(framework_box_calc_pk).outputs.retrieved
 
     # Contructing builder
-    builder = code.get_builder()
+    builder = raspa_code.get_builder()
     builder.framework = {
         "tcc1rs": framework,
     }
@@ -108,7 +103,21 @@ def main(codelabel, previous_calc, submit):
     print("-----")
 
 
+@click.command('cli')
+@click.argument('codelabel')
+@click.option('--previous_calc', '-p', required=True, type=int, help='PK of example_framework_box.py calculation')
+@click.option('--submit', is_flag=True, help='Actually submit calculation')
+def cli(codelabel, previous_calc, submit):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_framework_box_restart(code, previous_calc, submit)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

@@ -12,16 +12,8 @@ from aiida.engine import run_get_pk, run
 from aiida.orm import Code, Dict, CifData, SinglefileData
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
+def example_ff_files(raspa_code, submit=True):
     """Prepare and submit RASPA calculation with components mixture."""
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
 
     # parameters
     parameters = Dict(
@@ -69,15 +61,17 @@ def main(codelabel, submit):
 
     # Contructing builder
     pwd = os.path.dirname(os.path.realpath(__file__))
-    builder = code.get_builder()
+    builder = raspa_code.get_builder()
     builder.framework = {
-        "irmof_1": CifData(file=os.path.join(pwd, 'files', 'IRMOF-1_eqeq.cif')),
+        "irmof_1": CifData(file=os.path.join(pwd, '..', 'files', 'IRMOF-1_eqeq.cif')),
     }
+    # Note: Here the SinglefileData in the dict are stored otherwise the dry_run crashes.
+    #       However, this is not needed for real calculations (e.g., using --submit), since the work chains stores them.
     builder.file = {
-        "file_1": SinglefileData(file=os.path.join(pwd, 'files', 'force_field_mixing_rules.def')),
-        "file_2": SinglefileData(file=os.path.join(pwd, 'files', 'pseudo_atoms.def')),
-        "file_3": SinglefileData(file=os.path.join(pwd, 'files', 'CO2.def')),
-        "file_4": SinglefileData(file=os.path.join(pwd, 'files', 'N2.def')),
+        "file_1": SinglefileData(file=os.path.join(pwd, '..', 'files', 'force_field_mixing_rules.def')).store(),
+        "file_2": SinglefileData(file=os.path.join(pwd, '..', 'files', 'pseudo_atoms.def')).store(),
+        "file_3": SinglefileData(file=os.path.join(pwd, '..', 'files', 'CO2.def')).store(),
+        "file_4": SinglefileData(file=os.path.join(pwd, '..', 'files', 'N2.def')).store(),
     }
     builder.parameters = parameters
     builder.metadata.options = {
@@ -111,7 +105,20 @@ def main(codelabel, submit):
     print("-----")
 
 
+@click.command('cli')
+@click.argument('codelabel')
+@click.option('--submit', is_flag=True, help='Actually submit calculation')
+def cli(codelabel, submit):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_ff_files(code, submit)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

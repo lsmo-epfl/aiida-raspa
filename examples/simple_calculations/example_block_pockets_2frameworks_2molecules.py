@@ -15,16 +15,9 @@ from aiida.plugins import DataFactory
 CifData = DataFactory('cif')  # pylint: disable=invalid-name
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
-def main(codelabel, submit):
+def example_block_pockets(raspa_code, submit=True):
     """Prepare and submit RASPA calculation with blocked pockets."""
-    try:
-        code = Code.get_from_string(codelabel)
-    except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
-        sys.exit(1)
+
     # parameters
     parameters = Dict(
         dict={
@@ -88,15 +81,15 @@ def main(codelabel, submit):
 
     # frameworks
     pwd = os.path.dirname(os.path.realpath(__file__))
-    framework_1 = CifData(file=os.path.join(pwd, 'files', 'IRMOF-1.cif'))
-    framework_10 = CifData(file=os.path.join(pwd, 'files', 'IRMOF-10.cif'))
+    framework_1 = CifData(file=os.path.join(pwd, '..', 'files', 'IRMOF-1.cif'))
+    framework_10 = CifData(file=os.path.join(pwd, '..', 'files', 'IRMOF-10.cif'))
 
     # block pocket
-    block_pocket_1 = SinglefileData(file=os.path.join(pwd, 'files', 'IRMOF-1_test.block')).store()
-    block_pocket_10 = SinglefileData(file=os.path.join(pwd, 'files', 'IRMOF-10_test.block')).store()
+    block_pocket_1 = SinglefileData(file=os.path.join(pwd, '..', 'files', 'IRMOF-1_test.block')).store()
+    block_pocket_10 = SinglefileData(file=os.path.join(pwd, '..', 'files', 'IRMOF-10_test.block')).store()
 
     # Contructing builder
-    builder = code.get_builder()
+    builder = raspa_code.get_builder()
     builder.framework = {
         "irmof_1": framework_1,
         "irmof_10": framework_10,
@@ -136,7 +129,20 @@ def main(codelabel, submit):
         print("In order to actually submit, add '--submit'")
 
 
+@click.command('cli')
+@click.argument('codelabel')
+@click.option('--submit', is_flag=True, help='Actually submit calculation')
+def cli(codelabel, submit):
+    """Click interface"""
+    try:
+        code = Code.get_from_string(codelabel)
+    except NotExistent:
+        print("The code '{}' does not exist".format(codelabel))
+        sys.exit(1)
+    example_block_pockets(code, submit)
+
+
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter
 
 # EOF
