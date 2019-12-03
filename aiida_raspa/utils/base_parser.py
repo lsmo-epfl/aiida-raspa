@@ -168,6 +168,56 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
                     break
         # end of the 1st parsing part
 
+        # parsing current energies before and after the simulation:
+        reading = None
+        result_dict['energy_unit'] = 'kJ/mol'
+
+        for line in fobj:
+            # Understend if it is the initial or final "Current Energy Status" section
+            if "Current (initial full energy) Energy Status" in line:
+                reading = 'current_initial'
+            if "Current (full final energy) Energy Status" in line:
+                reading = 'current_final'
+
+            # Read the entries of "Current Energy Status" section
+            if r"Host/Adsorbate energy:" in line:
+                if reading == 'current_initial':
+                    result_dict['energy_host/adsorbate_initial_tot'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+                elif reading == 'current_final':
+                    result_dict['energy_host/adsorbate_final_tot'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+            if r"Host/Adsorbate VDW energy:" in line:
+                if reading == 'current_initial':
+                    result_dict['energy_host/adsorbate_initial_vdw'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+                elif reading == 'current_final':
+                    result_dict['energy_host/adsorbate_final_vdw'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+            if r"Host/Adsorbate Coulomb energy:" in line:
+                if reading == 'current_initial':
+                    result_dict['energy_host/adsorbate_initial_coulomb'] = float(
+                        line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+                elif reading == 'current_final':
+                    result_dict['energy_host/adsorbate_final_coulomb'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+            if r"Adsorbate/Adsorbate energy:" in line:
+                if reading == 'current_initial':
+                    result_dict['energy_adsorbate/adsorbate_initial_tot'] = float(
+                        line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+                elif reading == 'current_final':
+                    result_dict['energy_adsorbate/adsorbate_final_tot'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+            if r"Adsorbate/Adsorbate VDW energy:" in line:
+                if reading == 'current_initial':
+                    result_dict['energy_adsorbate/adsorbate_initial_vdw'] = float(
+                        line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+                elif reading == 'current_final':
+                    result_dict['energy_adsorbate/adsorbate_final_vdw'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+            if r"Adsorbate/Adsorbate Coulomb energy:" in line:
+                if reading == 'current_initial':
+                    result_dict['energy_adsorbate/adsorbate_initial_coulomb'] = float(
+                        line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+                    reading = None
+                elif reading == 'current_final':
+                    result_dict['energy_adsorbate/adsorbate_final_coulomb'] = float(
+                        line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+                    break
+
         # 2nd parsing part
         for line in fobj:
             for parse in BLOCK_1_LIST:
