@@ -24,9 +24,9 @@ def example_gemc_single_comp(raspa_code, gemc_single_comp_calc_pk=None, submit=T
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 400,
-                "NumberOfInitializationCycles": 200,
-                "PrintEvery": 200,
+                "NumberOfCycles": 50,
+                "NumberOfInitializationCycles": 50,
+                "PrintEvery": 10,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
@@ -82,10 +82,10 @@ def example_gemc_single_comp(raspa_code, gemc_single_comp_calc_pk=None, submit=T
         print("Testing RASPA GEMC with methane (Restart)...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Total Energy average (box_one):",
-              res['output_parameters'].dict.box_one['general']['total_energy_average'])
-        print("Total Energy average (box_two):",
-              res['output_parameters'].dict.box_two['general']['total_energy_average'])
+        print("Average number of methane molecules/uc (box_one):",
+              res['output_parameters'].dict.box_one['components']['methane']['loading_absolute_average'])
+        print("Average number of methane molecules/uc (box_two):",
+              res['output_parameters'].dict.box_two['components']['methane']['loading_absolute_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")

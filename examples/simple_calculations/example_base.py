@@ -25,13 +25,13 @@ def example_base(raspa_code, submit=True):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 400,
-                "NumberOfInitializationCycles": 200,
-                "PrintEvery": 200,
+                "NumberOfCycles": 50,
+                "NumberOfInitializationCycles": 50,
+                "PrintEvery": 10,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
-                "WriteBinaryRestartFileEvery": 200,
+                "WriteBinaryRestartFileEvery": 10,
             },
             "System": {
                 "tcc1rs": {
@@ -77,7 +77,8 @@ def example_base(raspa_code, submit=True):
         print("Testing RASPA with simple input ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
+        print("Average number of methane molecules/uc:",
+              res['output_parameters'].dict.tcc1rs['components']['methane']['loading_absolute_average'])
         print("OK, calculation has completed successfully")
         pytest.base_calc_pk = pk
     else:

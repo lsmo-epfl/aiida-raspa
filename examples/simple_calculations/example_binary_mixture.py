@@ -19,9 +19,9 @@ def example_binary_misture(raspa_code, submit=True):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 400,
-                "NumberOfInitializationCycles": 200,
-                "PrintEvery": 200,
+                "NumberOfCycles": 50,
+                "NumberOfInitializationCycles": 50,
+                "PrintEvery": 10,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,
@@ -72,8 +72,8 @@ def example_binary_misture(raspa_code, submit=True):
         print("Testing RASPA with binary mixture (propane/butane) ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Total Energy average (box_25_angstrom):",
-              res['output_parameters'].dict.box_25_angstrom['general']['total_energy_average'])
+        print("Average number of propane molecules/uc:",
+              res['output_parameters'].dict.box_25_angstrom['components']['propane']['loading_absolute_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")

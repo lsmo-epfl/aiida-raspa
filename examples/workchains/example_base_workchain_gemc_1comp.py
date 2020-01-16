@@ -24,9 +24,9 @@ def example_base_workchain_gemc(raspa_code):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 200,
-                "NumberOfInitializationCycles": 200,
-                "PrintEvery": 100,
+                "NumberOfCycles": 50,
+                "NumberOfInitializationCycles": 50,
+                "PrintEvery": 10,
                 "Forcefield": "GenericMOFs",
                 "CutOff": 12.0,
                 "GibbsVolumeChangeProbability": 0.1,
