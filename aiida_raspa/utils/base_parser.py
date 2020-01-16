@@ -21,21 +21,19 @@ KELVIN_TO_KJ_PER_MOL = float(8.314464919 / 1000.0)  #exactly the same as Raspa
 # manage block of the first type
 # --------------------------------------------------------------------------------------------
 BLOCK_1_LIST = [
-    (re.compile("Average Volume:"), "cell_volume", (1, 2, 4), 0),
-    (re.compile("Average Pressure:"), "pressure", (1, 2, 4), 0),
-    (re.compile("Average temperature:"), "temperature", (1, 2, 4), 0),
-    (re.compile("Average Density:"), "adsorbate_density", (1, 2, 4), 0),
-    (re.compile("Total energy:$"), "total_energy", (1, 2, 4), 0),
-    (re.compile("Average Heat Capacity"), "framework_heat_capacity", (1, 2, 4), 0),
-    (re.compile("Heat of desorption:"), "heat_of_desorption", (1, 4, 3), 4),
-    (re.compile("Enthalpy of adsorption:"), "enthalpy_of_adsorption", (1, 4, 3), 4),
-    (re.compile(".*Total enthalpy of adsorption from components and measured mol-fraction"),
-     "enthalpy_of_adsorption_total_molfrac", (1, 4, 3), 0),
+    #("Average temperature:", "temperature", (1, 2, 4), 0), # misleading property!
+    #("Average Pressure:", "pressure", (1, 2, 4), 0), # misleading property!
+    ("Average Volume:", "cell_volume", (1, 2, 4), 0),
+    ("Average Density:", "adsorbate_density", (1, 2, 4), 0),
+    #("Average Heat Capacity", "framework_heat_capacity", (1, 2, 4), 0), # misleading property!
+    ("Enthalpy of adsorption:", "enthalpy_of_adsorption", (1, 4, 3), 4),
+    ("Tail-correction energy:", "tail_correction_energy", (1, 2, 4), 0)
+    #("Total energy:$", "total_energy", (1, 2, 4), 0), # not important property!
 ]
 
 # block of box properties.
 BOX_PROP_LIST = [
-    (re.compile("Average Box-lengths:"), 'box'),
+    ("Average Box-lengths:", 'box'),
 ]
 
 
@@ -60,12 +58,19 @@ def parse_block1(flines, result_dict, prop, value=1, unit=2, dev=4):
             break
 
 
-# manage energy block
+# manage energy reading
 # --------------------------------------------------------------------------------------------
-ENERGY_BLOCK_LIST = [
-    (re.compile("Average Adsorbate-Adsorbate energy:"), 'ads_ads'),
-    (re.compile("Average Host-Adsorbate energy:"), 'host_ads'),
+ENERGY_CURRENT_LIST = [
+    ("Host/Adsorbate energy:", "host/ads", "tot"),
+    ("Host/Adsorbate VDW energy:", "host/ads", "vdw"),
+    ("Host/Adsorbate Coulomb energy:", "host/ads", "colomb"),
+    ("Adsorbate/Adsorbate energy:", "ads/ads", "tot"),
+    ("Adsorbate/Adsorbate VDW energy:", "ads/ads", "vdw"),
+    ("Adsorbate/Adsorbate Coulomb energy:", "ads/ads", "colomb"),
 ]
+
+ENERGY_AVERAGE_LIST = [("Average Adsorbate-Adsorbate energy:", "ads/ads"),
+                       ("Average Host-Adsorbate energy:", "host/ads")]
 
 
 def parse_block_energy(flines, res_dict, prop):
@@ -83,26 +88,23 @@ def parse_block_energy(flines, res_dict, prop):
     """
     for line in flines:
         if 'Average' in line:
-            res_dict[prop + '_total_energy_unit'] = 'kJ/mol'
-            res_dict[prop + '_vdw_energy_unit'] = 'kJ/mol'
-            res_dict[prop + '_coulomb_energy_unit'] = 'kJ/mol'
-            res_dict[prop + '_total_energy_average'] = float(line.split()[1]) * KELVIN_TO_KJ_PER_MOL
-            res_dict[prop + '_vdw_energy_average'] = float(line.split()[5]) * KELVIN_TO_KJ_PER_MOL
-            res_dict[prop + '_coulomb_energy_average'] = float(line.split()[7]) * KELVIN_TO_KJ_PER_MOL
+            res_dict["energy_{}_tot_average".format(prop)] = float(line.split()[1]) * KELVIN_TO_KJ_PER_MOL
+            res_dict["energy_{}_vdw_average".format(prop)] = float(line.split()[5]) * KELVIN_TO_KJ_PER_MOL
+            res_dict["energy_{}_coulomb_average".format(prop)] = float(line.split()[7]) * KELVIN_TO_KJ_PER_MOL
         if '+/-' in line:
-            res_dict[prop + '_total_energy_dev'] = float(line.split()[1]) * KELVIN_TO_KJ_PER_MOL
-            res_dict[prop + '_vdw_energy_dev'] = float(line.split()[3]) * KELVIN_TO_KJ_PER_MOL
-            res_dict[prop + '_coulomb_energy_dev'] = float(line.split()[5]) * KELVIN_TO_KJ_PER_MOL
+            res_dict["energy_{}_tot_dev".format(prop)] = float(line.split()[1]) * KELVIN_TO_KJ_PER_MOL
+            res_dict["energy_{}_vdw_dev".format(prop)] = float(line.split()[3]) * KELVIN_TO_KJ_PER_MOL
+            res_dict["energy_{}_coulomb_dev".format(prop)] = float(line.split()[5]) * KELVIN_TO_KJ_PER_MOL
             return
 
 
 # manage lines with components
 # --------------------------------------------------------------------------------------------
 LINES_WITH_COMPONENT_LIST = [
-    (re.compile(" Average Widom Rosenbluth-weight:"), "widom_rosenbluth_factor"),
-    (re.compile(" Average chemical potential: "), "chemical_potential"),
-    (re.compile(" Average Henry coefficient: "), "henry_coefficient"),
-    (re.compile(" Average  <U_gh>_1-<U_h>_0:"), "adsorption_energy_widom"),
+    (" Average Widom Rosenbluth-weight:", "widom_rosenbluth_factor"),
+    (" Average chemical potential: ", "chemical_potential"),
+    (" Average Henry coefficient: ", "henry_coefficient"),
+    (" Average  <U_gh>_1-<U_h>_0:", "adsorption_energy_widom"),
 ]
 
 
@@ -178,54 +180,25 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
         # from: "Current (initial full energy) Energy Status"
         # to: "Average properties of the system"
 
-        reading = None
+        reading = 'initial'
         result_dict['energy_unit'] = 'kJ/mol'
 
         for line in fobj:
             # Understend if it is the initial or final "Current Energy Status" section
-            if "Current (initial full energy) Energy Status" in line:
-                reading = 'current_initial'
             if "Current (full final energy) Energy Status" in line:
-                reading = 'current_final'
+                reading = 'final'
 
             # Read the entries of "Current Energy Status" section
-            if r"Host/Adsorbate energy:" in line:
-                if reading == 'current_initial':
-                    result_dict['energy_host/adsorbate_initial_tot'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-                elif reading == 'current_final':
-                    result_dict['energy_host/adsorbate_final_tot'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-            if r"Host/Adsorbate VDW energy:" in line:
-                if reading == 'current_initial':
-                    result_dict['energy_host/adsorbate_initial_vdw'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-                elif reading == 'current_final':
-                    result_dict['energy_host/adsorbate_final_vdw'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-            if r"Host/Adsorbate Coulomb energy:" in line:
-                if reading == 'current_initial':
-                    result_dict['energy_host/adsorbate_initial_coulomb'] = float(
-                        line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-                elif reading == 'current_final':
-                    result_dict['energy_host/adsorbate_final_coulomb'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-            if r"Adsorbate/Adsorbate energy:" in line:
-                if reading == 'current_initial':
-                    result_dict['energy_adsorbate/adsorbate_initial_tot'] = float(
-                        line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-                elif reading == 'current_final':
-                    result_dict['energy_adsorbate/adsorbate_final_tot'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-            if r"Adsorbate/Adsorbate VDW energy:" in line:
-                if reading == 'current_initial':
-                    result_dict['energy_adsorbate/adsorbate_initial_vdw'] = float(
-                        line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-                elif reading == 'current_final':
-                    result_dict['energy_adsorbate/adsorbate_final_vdw'] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-            if r"Adsorbate/Adsorbate Coulomb energy:" in line:
-                if reading == 'current_initial':
-                    result_dict['energy_adsorbate/adsorbate_initial_coulomb'] = float(
-                        line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-                    reading = None
-                elif reading == 'current_final':
-                    result_dict['energy_adsorbate/adsorbate_final_coulomb'] = float(
-                        line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-                    break
+            if reading:
+                for parse in ENERGY_CURRENT_LIST:
+                    if parse[0] in line:
+                        result_dict['energy_{}_{}_{}'.format(parse[1], parse[2],
+                                                             reading)] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
+                        if parse[1] == "host/ads" and parse[2] == "colomb":
+                            reading = None
+
+            if "Average properties of the system" in line:
+                break
 
         # 3rd parsing part: average system properties
         # --------------------------------------------------
@@ -234,7 +207,7 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
 
         for line in fobj:
             for parse in BLOCK_1_LIST:
-                if parse[0].match(line):
+                if parse[0] in line:
                     parse_block1(fobj, result_dict, parse[1], *parse[2])
                     # I assume here that properties per component are present furhter in the output file.
                     # so I need to skip some lines:
@@ -257,12 +230,12 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
                             skip_nlines_after -= 1
 
                     continue  # no need to perform further checks, propperty has been found already
-            for parse in ENERGY_BLOCK_LIST:
-                if parse[0].match(line):
+            for parse in ENERGY_AVERAGE_LIST:
+                if parse[0] in line:
                     parse_block_energy(fobj, result_dict, prop=parse[1])
                     continue  # no need to perform further checks, propperty has been found already
             for parse in BOX_PROP_LIST:
-                if parse[0].match(line):
+                if parse[0] in line:
                     # parse three cell vectors
                     parse_block1(fobj, result_dict, prop='box_ax', value=2, unit=3, dev=5)
                     parse_block1(fobj, result_dict, prop='box_by', value=2, unit=3, dev=5)
@@ -278,7 +251,7 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
         # 4th parsing part: average molecule properties
         # --------------------------------------------------
         # from: "Number of molecules"
-        # to: "end of file"
+        # to: end of file
 
         icomponent = 0
         for line in fobj:
@@ -297,17 +270,32 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
 
         for line in fobj:
             for to_parse in LINES_WITH_COMPONENT_LIST:
-                if to_parse[0].search(line):
+                if to_parse[0] in line:
                     parse_lines_with_component(res_per_component, component_names, line, to_parse[1])
+
+        # Assigning to None all the quantities that are meaningless if not running a Widom insertion calculation
+        for res_comp in res_per_component:
+            for prop in ["henry_coefficient", "widom_rosenbluth_factor", "chemical_potential"]:
+                if res_comp["{}_dev".format(prop)] == 0.0:
+                    res_comp["{}_average".format(prop)] = None
+                    res_comp["{}_dev".format(prop)] = None
+
+            # The section "Adsorption energy from Widom-insertion" is not showing in the output if no widom is performed
+            if not "adsorption_energy_widom_average" in res_comp:
+                res_comp["adsorption_energy_widom_unit"] = "kJ/mol"
+                res_comp["adsorption_energy_widom_dev"] = None
+                res_comp["adsorption_energy_widom_average"] = None
 
     return_dictionary = {"general": result_dict, "components": {}}
 
     for name, value in zip(component_names, res_per_component):
         return_dictionary["components"][name] = value
 
-    # Parsing all the warning that are printed in the output file (to improve to avoid redundancy)
+    # Parsing all the warning that are printed in the output file, avoiding redoundancy
     with open(output_abs_path, "r") as fobj:
         for line in fobj:
             if "WARNING" in line:
-                warnings.append((system_name, line))
+                warning_touple = (system_name, line)
+                if warning_touple not in warnings:
+                    warnings.append(warning_touple)
     return return_dictionary, warnings
