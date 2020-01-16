@@ -184,7 +184,7 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
         result_dict['energy_unit'] = 'kJ/mol'
 
         for line in fobj:
-            # Understend if it is the initial or final "Current Energy Status" section
+            # Understand if it is the initial or final "Current Energy Status" section
             if "Current (full final energy) Energy Status" in line:
                 reading = 'final'
 
@@ -194,7 +194,7 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
                     if parse[0] in line:
                         result_dict['energy_{}_{}_{}'.format(parse[1], parse[2],
                                                              reading)] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-                        if parse[1] == "host/ads" and parse[2] == "coulomb":
+                        if parse[1] == "ads/ads" and parse[2] == "coulomb":
                             reading = None
 
             if "Average properties of the system" in line:
