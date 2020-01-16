@@ -23,8 +23,8 @@ def example_henry(raspa_code, submit=True):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 400,
-                "PrintEvery": 200,
+                "NumberOfCycles": 50,
+                "PrintPropertiesEvery": 10,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,

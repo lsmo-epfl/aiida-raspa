@@ -24,8 +24,8 @@ def example_base_workchain_widom(raspa_code):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 200,
-                "PrintEvery": 200,
+                "NumberOfCycles": 50,
+                "PrintEvery": 10,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
                 "CutOff": 12.0,

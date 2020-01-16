@@ -24,9 +24,9 @@ def example_identity(raspa_code, submit=True):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 400,
-                "NumberOfInitializationCycles": 200,
-                "PrintEvery": 100,
+                "NumberOfCycles": 50,
+                "NumberOfInitializationCycles": 50,
+                "PrintEvery": 10,
                 "ChargeMethod": "Ewald",
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
@@ -110,7 +110,8 @@ def example_identity(raspa_code, submit=True):
         print("Testing RASPA with changing identity ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
+        print("Average number of methane molecules/uc:",
+              res['output_parameters'].dict.tcc1rs['components']['methane']['loading_absolute_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")

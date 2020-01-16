@@ -29,12 +29,12 @@ def example_framework_box_restart(raspa_code, framework_box_calc_pk=None, submit
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 400,
-                "NumberOfInitializationCycles": 200,
-                "PrintEvery": 100,
+                "NumberOfCycles": 50,
+                "NumberOfInitializationCycles": 50,
+                "PrintEvery": 10,
                 "Forcefield": "GenericMOFs",
                 "EwaldPrecision": 1e-6,
-                "WriteBinaryRestartFileEvery": 200,
+                "WriteBinaryRestartFileEvery": 10,
             },
             "System": {
                 "tcc1rs": {
@@ -89,9 +89,10 @@ def example_framework_box_restart(raspa_code, framework_box_calc_pk=None, submit
         print("Testing RASPA with framework and box, restart ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Total Energy average (tcc1rs):", res['output_parameters'].dict.tcc1rs['general']['total_energy_average'])
-        print("Total Energy average (box_25_angstroms):",
-              res['output_parameters'].dict.box_25_angstroms['general']['total_energy_average'])
+        print("Average number of methane molecules/uc (tcc1rs):",
+              res['output_parameters'].dict.tcc1rs['components']['methane']['loading_absolute_average'])
+        print("Average number of methane molecules/uc (box):",
+              res['output_parameters'].dict.box_25_angstroms['components']['methane']['loading_absolute_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
