@@ -63,10 +63,10 @@ def parse_block1(flines, result_dict, prop, value=1, unit=2, dev=4):
 ENERGY_CURRENT_LIST = [
     ("Host/Adsorbate energy:", "host/ads", "tot"),
     ("Host/Adsorbate VDW energy:", "host/ads", "vdw"),
-    ("Host/Adsorbate Coulomb energy:", "host/ads", "colomb"),
+    ("Host/Adsorbate Coulomb energy:", "host/ads", "coulomb"),
     ("Adsorbate/Adsorbate energy:", "ads/ads", "tot"),
     ("Adsorbate/Adsorbate VDW energy:", "ads/ads", "vdw"),
-    ("Adsorbate/Adsorbate Coulomb energy:", "ads/ads", "colomb"),
+    ("Adsorbate/Adsorbate Coulomb energy:", "ads/ads", "coulomb"),
 ]
 
 ENERGY_AVERAGE_LIST = [("Average Adsorbate-Adsorbate energy:", "ads/ads"),
@@ -194,7 +194,7 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
                     if parse[0] in line:
                         result_dict['energy_{}_{}_{}'.format(parse[1], parse[2],
                                                              reading)] = float(line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
-                        if parse[1] == "host/ads" and parse[2] == "colomb":
+                        if parse[1] == "host/ads" and parse[2] == "coulomb":
                             reading = None
 
             if "Average properties of the system" in line:
