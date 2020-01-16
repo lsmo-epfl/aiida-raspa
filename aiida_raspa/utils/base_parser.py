@@ -99,10 +99,10 @@ def parse_block_energy(flines, res_dict, prop):
 # manage lines with components
 # --------------------------------------------------------------------------------------------
 LINES_WITH_COMPONENT_LIST = [
+    (re.compile(" Average Widom Rosenbluth-weight:"), "widom_rosenbluth_factor"),
     (re.compile(" Average chemical potential: "), "chemical_potential"),
     (re.compile(" Average Henry coefficient: "), "henry_coefficient"),
     (re.compile(" Average  <U_gh>_1-<U_h>_0:"), "adsorption_energy_widom"),
-    (re.compile(" Average Widom Rosenbluth-weight:"), "widom_rosenbluth_factor"),
 ]
 
 
@@ -119,18 +119,21 @@ def parse_lines_with_component(res_components, components, line, prop):
 
 # pylint: disable=too-many-locals, too-many-arguments, too-many-statements, too-many-branches
 def parse_base_output(output_abs_path, system_name, ncomponents):
-    """Parse RASPA output file"""
+    """Parse RASPA output file: it is divided in different parts, whose start/end is carefully documented."""
 
     warnings = []
     res_per_component = []
     for i in range(ncomponents):
         res_per_component.append({})
     result_dict = {'exceeded_walltime': False}
-    framework_density = re.compile("Framework Density:")
-    num_of_molec = re.compile("Number of molecules:$")
 
     with open(output_abs_path, "r") as fobj:
-        # 1st parsing part
+
+        # 1st parsing part: input settings
+        # --------------------------------
+        # from: start of file
+        # to: "Current (initial full energy) Energy Status"
+
         icomponent = 0
         component_names = []
         res_cmp = res_per_component[0]
@@ -164,11 +167,17 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
                 icomponent += 1
                 if icomponent < ncomponents:
                     res_cmp = res_per_component[icomponent]
-                else:
-                    break
-        # end of the 1st parsing part
+            if "Framework Density" in line:
+                result_dict['framework_density'] = line.split()[2]
+                result_dict['framework_density_unit'] = re.sub(r'[{}()\[\]]', '', line.split()[3])
+            if "Current (initial full energy) Energy Status" in line:
+                break
 
-        # parsing current energies before and after the simulation:
+        # 2nd parsing part: initial and final configurations
+        # --------------------------------------------------
+        # from: "Current (initial full energy) Energy Status"
+        # to: "Average properties of the system"
+
         reading = None
         result_dict['energy_unit'] = 'kJ/mol'
 
@@ -218,7 +227,11 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
                         line.split()[-1]) * KELVIN_TO_KJ_PER_MOL
                     break
 
-        # 2nd parsing part
+        # 3rd parsing part: average system properties
+        # --------------------------------------------------
+        # from: "Average properties of the system"
+        # to: "Number of molecules"
+
         for line in fobj:
             for parse in BLOCK_1_LIST:
                 if parse[0].match(line):
@@ -258,15 +271,15 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
                     parse_block1(fobj, result_dict, prop='box_alpha', value=3, unit=4, dev=6)
                     parse_block1(fobj, result_dict, prop='box_beta', value=3, unit=4, dev=6)
                     parse_block1(fobj, result_dict, prop='box_gamma', value=3, unit=4, dev=6)
-            if framework_density.match(line) is not None:
-                result_dict['framework_density'] = line.split()[2]
-                result_dict['framework_density_unit'] = re.sub(r'[{}()\[\]]', '', line.split()[3])
 
-            elif num_of_molec.match(line) is not None:
-                break  # this stops the cycle
-        # end of the 2nd parsing part
+            if "Number of molecules:" in line:
+                break
 
-        # 3rd parsing part
+        # 4th parsing part: average molecule properties
+        # --------------------------------------------------
+        # from: "Number of molecules"
+        # to: "end of file"
+
         icomponent = 0
         for line in fobj:
             # Consider to change it with parse_line?
@@ -281,20 +294,18 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
                 icomponent += 1
             if icomponent >= ncomponents:
                 break
-        # end of the 3rd parsing part
 
-        # 4th parsing part
         for line in fobj:
             for to_parse in LINES_WITH_COMPONENT_LIST:
                 if to_parse[0].search(line):
                     parse_lines_with_component(res_per_component, component_names, line, to_parse[1])
-        # end of the 4th parsing part
 
     return_dictionary = {"general": result_dict, "components": {}}
 
     for name, value in zip(component_names, res_per_component):
         return_dictionary["components"][name] = value
 
+    # Parsing all the warning that are printed in the output file (to improve to avoid redundancy)
     with open(output_abs_path, "r") as fobj:
         for line in fobj:
             if "WARNING" in line:
