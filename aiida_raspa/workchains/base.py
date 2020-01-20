@@ -4,6 +4,7 @@ from __future__ import absolute_import
 
 from aiida.common import AttributeDict
 from aiida.engine import while_
+from aiida.orm import Int
 from aiida.plugins import CalculationFactory
 
 from aiida_raspa.utils import ErrorHandlerReport, register_error_handler, add_write_binary_restart
@@ -39,7 +40,7 @@ class RaspaBaseWorkChain(BaseRestartWorkChain):
         super(RaspaBaseWorkChain, self).setup()
         self.ctx.inputs = AttributeDict(self.exposed_inputs(RaspaCalculation, 'raspa'))
         if "WriteBinaryRestartFileEvery" not in self.ctx.inputs.parameters["GeneralSettings"]:
-            self.ctx.inputs.parameters = add_write_binary_restart(self.ctx.inputs.parameters)
+            self.ctx.inputs.parameters = add_write_binary_restart(self.ctx.inputs.parameters, Int(100))
 
     def report_error_handled(self, calculation, action):
         """Report an action taken for a calculation that has failed.

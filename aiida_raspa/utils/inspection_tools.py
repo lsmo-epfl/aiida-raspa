@@ -12,7 +12,7 @@ from .other_utilities import ErrorHandlerReport
 
 
 @calcfunction
-def add_write_binary_restart(input_dict, write_every=Int(100)):
+def add_write_binary_restart(input_dict, write_every):
     final_dict = input_dict.get_dict()
     final_dict["GeneralSettings"]["WriteBinaryRestartFileEvery"] = write_every
     return input_dict if input_dict.get_dict() == final_dict else Dict(dict=final_dict)
