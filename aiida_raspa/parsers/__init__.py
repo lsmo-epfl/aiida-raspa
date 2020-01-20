@@ -44,6 +44,14 @@ class RaspaParser(Parser):
                 system,
                 fname)
 
+            # Check for possible errors
+            with open(output_abs_path) as fobj:
+                content = fobj.read()
+                if "Starting simulation" not in content:
+                    return self.exit_codes.ERROR_SIMULATION_DID_NOT_START
+                if "Simulation finished" not in content:
+                    return self.exit_codes.TIMEOUT
+
             # parse output parameters and warnings
             parsed_parameters, parsed_warnings = parse_base_output(output_abs_path, system_name, ncomponents)
             output_parameters[system_name] = parsed_parameters

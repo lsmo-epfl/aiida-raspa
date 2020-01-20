@@ -12,6 +12,13 @@ from .other_utilities import ErrorHandlerReport
 
 
 @calcfunction
+def add_write_binary_restart(input_dict, write_every=Int(100)):
+    final_dict = input_dict.get_dict()
+    final_dict["GeneralSettings"]["WriteBinaryRestartFileEvery"] = write_every
+    return input_dict if input_dict.get_dict() == final_dict else Dict(dict=final_dict)
+
+
+@calcfunction
 def modify_number_of_cycles(input_dict, additional_init_cycle, additional_prod_cycle):
     """Modify number of cycles to improve the convergence."""
     final_dict = input_dict.get_dict()
