@@ -56,11 +56,8 @@ class RaspaBaseWorkChain(BaseRestartWorkChain):
 @register_error_handler(RaspaBaseWorkChain, 570)
 def _handle_timeout(self, calculation):
     """Error handler that restarts calculation finished with TIMEOUT ExitCode."""
-    self.report_error_handled(calculation, "Entering timeout handler.")
-    self.report_error_handled(calculation, calculation.exit_status)
     if calculation.exit_status == RaspaCalculation.spec().exit_codes.TIMEOUT.status:
-        self.report_error_handled(calculation, "Registering binary restart.")
+        self.report_error_handled(calculation, "Timeout handler. Adding remote folder as input to use binary restart.")
         self.ctx.inputs.parent_folder = calculation.outputs.remote_folder
-    self.report_error_handled(calculation, "Restarting calc time out.")
 
     return ErrorHandlerReport(True, False, None)

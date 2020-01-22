@@ -189,7 +189,6 @@ class BaseRestartWorkChain(WorkChain):
         # If the exit code returned actually has status `0` that means we consider the calculation as successful
         if isinstance(exit_code, ExitCode):
             if  exit_code.status == 0:
-                self.report('What am I doing here?')
                 self.ctx.is_finished = True
             return exit_code
 
