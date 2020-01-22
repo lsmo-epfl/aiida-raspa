@@ -40,7 +40,7 @@ class RaspaBaseWorkChain(BaseRestartWorkChain):
         super(RaspaBaseWorkChain, self).setup()
         self.ctx.inputs = AttributeDict(self.exposed_inputs(RaspaCalculation, 'raspa'))
         if "WriteBinaryRestartFileEvery" not in self.ctx.inputs.parameters["GeneralSettings"]:
-            self.ctx.inputs.parameters = add_write_binary_restart(self.ctx.inputs.parameters, Int(100))
+            self.ctx.inputs.parameters = add_write_binary_restart(self.ctx.inputs.parameters, Int(1000))
 
     def report_error_handled(self, calculation, action):
         """Report an action taken for a calculation that has failed.
