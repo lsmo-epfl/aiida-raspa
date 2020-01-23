@@ -187,10 +187,10 @@ class BaseRestartWorkChain(WorkChain):
             exit_code = self._handle_unexpected_failure(calculation, exception)
 
         # If the exit code returned actually has status `0` that means we consider the calculation as successful
-        if isinstance(exit_code, ExitCode) and exit_code.status == 0:
-            self.ctx.is_finished = True
-
-        return exit_code
+        if isinstance(exit_code, ExitCode):
+            if  exit_code.status == 0:
+                self.ctx.is_finished = True
+            return exit_code
 
     def results(self):
         """Attach the outputs specified in the output specification from the last completed calculation."""

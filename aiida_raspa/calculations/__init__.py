@@ -66,6 +66,10 @@ class RaspaCalculation(CalcJob):
                        'ERROR_NO_RETRIEVED_FOLDER',
                        message='The retrieved folder data node could not be accessed.')
         spec.exit_code(101, 'ERROR_NO_OUTPUT_FILE', message='The retrieved folder does not contain an output file.')
+        spec.exit_code(102,
+                       'ERROR_SIMULATION_DID_NOT_START',
+                       message='The output does not contain "Starting simulation".')
+        spec.exit_code(500, 'TIMEOUT', message='The calculation could not be completed due to the lack of time.')
 
         # Default output node
         spec.default_output_node = 'output_parameters'
@@ -80,6 +84,10 @@ class RaspaCalculation(CalcJob):
         :param folder: a aiida.common.folders.Folder subclass where
                            the plugin should put all its files.
         """
+        # create calc info
+        calcinfo = CalcInfo()
+        calcinfo.remote_copy_list = []
+        calcinfo.local_copy_list = []
 
         # initialize input parameters
         inp = RaspaInput(self.inputs.parameters.get_dict())
@@ -97,10 +105,11 @@ class RaspaCalculation(CalcJob):
             inp.params['GeneralSettings']['RestartFile'] = True
 
         # handle binary restart
-        remote_copy_list = []
         if 'parent_folder' in self.inputs:
-            self._handle_parent_folder(remote_copy_list)
             inp.params['GeneralSettings']['ContinueAfterCrash'] = True
+            calcinfo.remote_copy_list.append((self.inputs.parent_folder.computer.uuid,
+                                              os.path.join(self.inputs.parent_folder.get_remote_path(),
+                                                           'CrashRestart'), 'CrashRestart'))
 
         # get settings
         if 'settings' in self.inputs:
@@ -117,8 +126,6 @@ class RaspaCalculation(CalcJob):
         codeinfo.cmdline_params = settings.pop('cmdline', []) + [self.INPUT_FILE]
         codeinfo.code_uuid = self.inputs.code.uuid
 
-        # create calc info
-        calcinfo = CalcInfo()
         calcinfo.stdin_name = self.INPUT_FILE
         calcinfo.uuid = self.uuid
         calcinfo.cmdline_params = codeinfo.cmdline_params
@@ -127,8 +134,6 @@ class RaspaCalculation(CalcJob):
         calcinfo.codes_info = [codeinfo]
 
         # file lists
-        calcinfo.remote_symlink_list = []
-        calcinfo.local_copy_list = []
         if 'file' in self.inputs:
             for fobj in self.inputs.file.values():
                 calcinfo.local_copy_list.append((fobj.uuid, fobj.filename, fobj.filename))
@@ -137,9 +142,6 @@ class RaspaCalculation(CalcJob):
         if 'block_pocket' in self.inputs:
             for name, fobj in self.inputs.block_pocket.items():
                 calcinfo.local_copy_list.append((fobj.uuid, fobj.filename, name + '.block'))
-
-        # continue the previous calculation starting from the binary restart
-        calcinfo.remote_copy_list = remote_copy_list
 
         calcinfo.retrieve_list = [self.OUTPUT_FOLDER, self.RESTART_FOLDER]
         calcinfo.retrieve_list += settings.pop('additional_retrieve_list', [])
@@ -201,9 +203,3 @@ class RaspaCalculation(CalcJob):
             new_fname = "restart_{:s}_{:d}.{:d}.{:d}_{:f}_{:g}".format(system_or_box, n_x, n_y, n_z,
                                                                        system['ExternalTemperature'], external_pressure)
             os.rename(os.path.join(current_folder, old_fname), os.path.join(current_folder, new_fname))
-
-    def _handle_parent_folder(self, remote_copy_list):
-        """Enable binary restart from the remote folder."""
-        remote_copy_list.append((self.inputs.parent_folder.computer.uuid,
-                                 os.path.join(self.inputs.parent_folder.get_remote_path(),
-                                              'CrashRestart'), 'CrashRestart'))
