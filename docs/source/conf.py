@@ -82,8 +82,6 @@ intersphinx_mapping = {
     'aiida': ('http://aiida-core.readthedocs.io/en/latest/', None),
 }
 
-nitpick_ignore = [('py:obj', 'module')]
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -436,4 +434,7 @@ nitpick_ignore = [
     ('py:obj', 'float'),
     ('py:obj', 'bool'),
     ('py:obj', 'Mapping'),
+    ('py:class', 'list'),
+    ('py:class', 'tuple'),
+    ('py:class', 'dict'),
 ]

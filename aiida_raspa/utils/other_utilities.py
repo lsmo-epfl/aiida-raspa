@@ -17,7 +17,7 @@ ErrorHandler = namedtuple('ErrorHandler', 'priority method')
 """A namedtuple to define an error handler for a :class:`~aiida.engine.processes.workchains.workchain.WorkChain`.
 The priority determines in which order the error handling methods are executed, with
 the higher priority being executed first. The method defines an unbound WorkChain method
-that takes an instance of a :class:`~aiida.orm.nodes.process.calculations.calcjob.CalcJobNode`
+that takes an instance of a :class:`~aiida.orm.CalcJobNode`
 as its sole argument. If the condition of the error handler is met, it should return an :class:`.ErrorHandlerReport`.
 :param priority: integer denoting the error handlers priority
 :param method: the workchain class method
@@ -83,16 +83,19 @@ def wrap_bare_dict_inputs(port_namespace, inputs):
 
 
 def register_error_handler(cls, priority=None):
-    """Decoraten any function in an error handler :class:`.BaseRestartWorkChain` sub classes.
+    """Decorate any function in an error handler :class:`.BaseRestartWorkChain` sub classes.
+
     The function expects two arguments, a workchain class and a priortity. The decorator will add the function as a
     class method to the workchain class and add an :class:`.ErrorHandler` tuple to the
-    :attr:`.BaseRestartWorkChain._error_handlers` attribute of the workchain. During failed calculation handling the
+    ``_error_handlers`` attribute of the workchain. During failed calculation handling the
     :meth:`.inspect_calculation` outline method will call the `_handle_calculation_failure` which will loop over all
-    error handler in the :attr:`.BaseRestartWorkChain._error_handlers`, sorted with respect to the priority in reverse.
+    error handler in the ``_error_handlers``, sorted with respect to the priority in reverse.
     If the workchain class defines a :attr:`.BaseRestartWorkChain._verbose` attribute and is set to `True`, a report
     message will be fired when the error handler is executed.
-    Requirements on the function signature of error handling functions. The function to which the
-    decorator is applied needs to take two arguments:
+
+    Requirements on the function signature of error handling functions.
+
+    The function to which the decorator is applied needs to take two arguments:
 
         * `self`: This is the instance of the workchain itself
         * `calculation`: This is the calculation that failed and needs to be investigated
@@ -101,12 +104,15 @@ def register_error_handler(cls, priority=None):
     the error that it is designed to handle is applicable. Although not required, it is advised that
     the function return an :class:`.ErrorHandlerReport` tuple when its conditional was met. If an error was handled
     it should set `is_handled` to `True`. If no other error handlers should be considered set `do_break` to `True`.
+
     :param cls: the workchain class to register the error handler with
+
     :param priority: optional integer that defines the order in which registered handlers will be called
         during the handling of a failed calculation. Higher priorities will be handled first. If the priority is `None`
         the handler will not be automatically called during calculation failure handling. This is useful to define
         handlers that one only wants to call manually, for example in the `_handle_sanity_checks` and still profit
         from the other features of this decorator.
+
     """
 
     def error_handler_decorator(handler):
