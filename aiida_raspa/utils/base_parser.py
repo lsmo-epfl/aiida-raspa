@@ -39,9 +39,9 @@ BOX_PROP_LIST = [
 
 # pylint: disable=too-many-arguments
 def parse_block1(flines, result_dict, prop, value=1, unit=2, dev=4):
-    """Parse volume block.
+    """Parse block.
 
-    Parse block that looks as follows::
+    Parses blocks that look as follows::
 
         Average Volume:
         =================

@@ -93,8 +93,10 @@ def register_error_handler(cls, priority=None):
     message will be fired when the error handler is executed.
     Requirements on the function signature of error handling functions. The function to which the
     decorator is applied needs to take two arguments:
+
         * `self`: This is the instance of the workchain itself
         * `calculation`: This is the calculation that failed and needs to be investigated
+
     The function body should usually consist of a single conditional that checks the calculation if
     the error that it is designed to handle is applicable. Although not required, it is advised that
     the function return an :class:`.ErrorHandlerReport` tuple when its conditional was met. If an error was handled

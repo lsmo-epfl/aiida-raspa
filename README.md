@@ -6,7 +6,7 @@
 
 [AiiDA](http://www.aiida.net/) plugin for [RASPA2](https://github.com/iRASPA/RASPA2).
 
-Designed to work with with RASPA >= 2.0.37.
+Designed to work with with RASPA 2.0.37 or later.
 
 ## Installation
 
