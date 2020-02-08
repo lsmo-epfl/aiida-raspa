@@ -39,16 +39,20 @@ BOX_PROP_LIST = [
 
 # pylint: disable=too-many-arguments
 def parse_block1(flines, result_dict, prop, value=1, unit=2, dev=4):
-    """Parse block that looks as follows:
-    Average Volume:
-    =================
-        Block[ 0]        12025.61229 [A^3]
-        Block[ 1]        12025.61229 [A^3]
-        Block[ 2]        12025.61229 [A^3]
-        Block[ 3]        12025.61229 [A^3]
-        Block[ 4]        12025.61229 [A^3]
-        ------------------------------------------------------------------------------
-        Average          12025.61229 [A^3] +/-            0.00000 [A^3]
+    """Parse block.
+
+    Parses blocks that look as follows::
+
+        Average Volume:
+        =================
+            Block[ 0]        12025.61229 [A^3]
+            Block[ 1]        12025.61229 [A^3]
+            Block[ 2]        12025.61229 [A^3]
+            Block[ 3]        12025.61229 [A^3]
+            Block[ 4]        12025.61229 [A^3]
+            ------------------------------------------------------------------------------
+            Average          12025.61229 [A^3] +/-            0.00000 [A^3]
+
     """
     for line in flines:
         if 'Average' in line:
@@ -74,17 +78,20 @@ ENERGY_AVERAGE_LIST = [("Average Adsorbate-Adsorbate energy:", "ads/ads"),
 
 
 def parse_block_energy(flines, res_dict, prop):
-    """Parse block that looks as follows:
-    Average Adsorbate-Adsorbate energy:
-    ===================================
-        Block[ 0] -443.23204         Van der Waals: -443.23204         Coulomb: 0.00000            [K]
-        Block[ 1] -588.20205         Van der Waals: -588.20205         Coulomb: 0.00000            [K]
-        Block[ 2] -538.43355         Van der Waals: -538.43355         Coulomb: 0.00000            [K]
-        Block[ 3] -530.00960         Van der Waals: -530.00960         Coulomb: 0.00000            [K]
-        Block[ 4] -484.15106         Van der Waals: -484.15106         Coulomb: 0.00000            [K]
-        ------------------------------------------------------------------------------
-        Average   -516.80566         Van der Waals: -516.805659        Coulomb: 0.00000            [K]
-              +/- 98.86943                      +/- 98.869430               +/- 0.00000            [K]
+    """Parse energy block.
+
+    Parse block that looks as follows::
+
+        Average Adsorbate-Adsorbate energy:
+        ===================================
+            Block[ 0] -443.23204         Van der Waals: -443.23204         Coulomb: 0.00000            [K]
+            Block[ 1] -588.20205         Van der Waals: -588.20205         Coulomb: 0.00000            [K]
+            Block[ 2] -538.43355         Van der Waals: -538.43355         Coulomb: 0.00000            [K]
+            Block[ 3] -530.00960         Van der Waals: -530.00960         Coulomb: 0.00000            [K]
+            Block[ 4] -484.15106         Van der Waals: -484.15106         Coulomb: 0.00000            [K]
+            ------------------------------------------------------------------------------
+            Average   -516.80566         Van der Waals: -516.805659        Coulomb: 0.00000            [K]
+                  +/- 98.86943                      +/- 98.869430               +/- 0.00000            [K]
     """
     for line in flines:
         if 'Average' in line:

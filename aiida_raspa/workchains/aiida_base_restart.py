@@ -92,7 +92,7 @@ class BaseRestartWorkChain(WorkChain):
         """Define the process specification."""
         # yapf: disable
         super(BaseRestartWorkChain, cls).define(spec)
-        spec.input('max_iterations', valid_type=orm.Int, default=orm.Int(5),
+        spec.input('max_iterations', valid_type=orm.Int, default=lambda: orm.Int(5),
             help='Maximum number of iterations the work chain will restart the calculation to finish successfully.')
         spec.input('clean_workdir', valid_type=orm.Bool, default=orm.Bool(False),
             help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')

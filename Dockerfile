@@ -35,7 +35,7 @@ RUN make install
 WORKDIR ${HOME}/code/aiida-raspa
 
 # Install aiida-raspa plugin and coveralls
-RUN pip install --user .[pre-commit,test]
+RUN pip install --user .[pre-commit,test,docs]
 RUN pip install --user coveralls
 
 # Populate reentry cache for aiida user https://pypi.python.org/pypi/reentry/
