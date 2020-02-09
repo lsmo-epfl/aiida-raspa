@@ -9,6 +9,6 @@ set -x
 export SHELL=/bin/bash
 
 # Install the ddec and cp2k codes
-RASPA_FOLDER=/home/aiida/code/aiida-raspa
+RASPA_FOLDER=/opt/code/aiida-raspa
 
 verdi code show raspa@localhost || verdi code setup --config ${RASPA_FOLDER}/.docker/raspa-code.yml --non-interactive
