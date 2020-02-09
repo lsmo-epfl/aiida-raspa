@@ -6,18 +6,17 @@ services:
 before_install:
   - python .ci/check_travis_tag.py
   - docker build -t aiida_raspa_test .
-  - docker run -d aiida_raspa_test
-  - sleep 30 # wait untill the container is launched
+  - export DOCKERID=`docker run -d aiida_raspa_test`
+  - docker exec --tty $DOCKERID wait-for-services
 
 script:
-  - "export DOCKERID=`docker ps -qf 'ancestor=aiida_raspa_test'`"
   - "echo \"Docker ID: $DOCKERID\""
-  - "docker exec -it --user aiida \"$DOCKERID\" /bin/bash -l -c 'cd code/aiida-raspa/ && pre-commit run --all-files || ( git status --short ; git diff ; exit 1 ) '"
-  - "docker exec -it --user aiida \"$DOCKERID\" /bin/bash -l -c 'cd code/aiida-raspa/ && py.test --cov aiida_raspa --cov-append .'"
-  - "docker exec -it --user aiida \"$DOCKERID\" /bin/bash -l -c 'cd code/aiida-raspa/docs && make'"
+  - docker exec -it --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )'
+  - docker exec -it --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && py.test --cov aiida_raspa --cov-append .'
+  - docker exec -it --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/docs && make'
 
 after_success:
-  - "docker exec -e TRAVIS=\"$TRAVIS\" -e TRAVIS_JOB_ID=\"$TRAVIS_JOB_ID\" -e TRAVIS_BRANCH=\"$TRAVIS_BRANCH\" -it --user aiida \"$DOCKERID\" /bin/bash -l -c 'cd code/aiida-raspa/ && coveralls'"
+  - docker exec -e TRAVIS=$TRAVIS -e TRAVIS_JOB_ID=$TRAVIS_JOB_ID -e TRAVIS_BRANCH=$TRAVIS_BRANCH -it --user aiida $DOCKERID /bin/bash -l -c 'cd code/aiida-raspa/ && coveralls'
 
 git:
   depth: 3
