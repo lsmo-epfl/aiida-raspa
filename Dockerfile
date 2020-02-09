@@ -1,8 +1,8 @@
 FROM aiidateam/aiida-core:latest
 
 # Set HOME, PATH and RASPA_DIR variables:
+ENV PATH="/opt/RASPA2_installed/bin/:${PATH}"
 ENV RASPA2_DIR=/opt/RASPA2_installed
-ENV PATH="/opt/RASPA2_installed/bin/:${HOME}/.local/bin:${PATH}"
 
 WORKDIR /opt/
 
@@ -35,6 +35,3 @@ RUN make install
 # Install the RASPA code to AiiDA.
 COPY .docker/opt/add-codes.sh /opt/
 COPY .docker/my_init.d/add-codes.sh /etc/my_init.d/50_add-codes.sh
-
-# Change workdir back to $HOME
-WORKDIR ${HOME}
