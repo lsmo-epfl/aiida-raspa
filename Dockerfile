@@ -8,7 +8,7 @@ WORKDIR /opt/
 
 # Copy and install aiida-raspa plugin.
 COPY . aiida-raspa
-RUN pip install aiida-raspa[pre-commit,test,docs]
+RUN pip install ./aiida-raspa[pre-commit,test,docs]
 
 # Install coveralls.
 RUN pip install coveralls
