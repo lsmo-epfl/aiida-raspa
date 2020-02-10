@@ -3,6 +3,7 @@ FROM aiidateam/aiida-core:latest
 # Set HOME, PATH and RASPA_DIR variables:
 ENV PATH="/opt/RASPA2_installed/bin/:${PATH}"
 ENV RASPA2_DIR=/opt/RASPA2_installed
+ENV KILL_ALL_RPOCESSES_TIMEOUT=50
 
 WORKDIR /opt/
 
