@@ -17,7 +17,8 @@
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
-        "aiida-core>=1.0.0,<2.0.0"
+        "aiida-core>=1.0.0,<2.0.0",
+        "PyCifRW~=4.4"
     ],
     "entry_points": {
         "aiida.calculations": [
