@@ -22,4 +22,4 @@ fi
 unset __conda_setup
 
 # Install raspa code.
-verdi code show raspa@localhost || verdi code setup --config /opt/code/aiida-raspa/.docker/raspa-code.yml --non-interactive
+verdi code show raspa@localhost || verdi code setup --config /opt/aiida-raspa/.docker/raspa-code.yml --non-interactive
