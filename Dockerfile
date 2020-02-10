@@ -14,7 +14,7 @@ RUN pip install ./aiida-raspa[pre-commit,test,docs]
 RUN pip install coveralls
 
 # Install necessary codes to build RASPA2.
-RUN apt-get update && apt-get install -y --no-install-recommends  \
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get install -y --no-install-recommends  \
     automake \
     libtool
 
