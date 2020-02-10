@@ -23,6 +23,3 @@ unset __conda_setup
 
 # Install raspa code.
 verdi code show raspa@localhost || verdi code setup --config /opt/aiida-raspa/.docker/raspa-code.yml --non-interactive
-
-# Make /opt/aiida-raspa folder editable for the $SYSTEM_USER.
-chown ${SYSTEM_USER}:${SYSTEM_USER} /opt/aiida-raspa/
