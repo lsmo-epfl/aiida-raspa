@@ -7,6 +7,8 @@ before_install:
   - python .ci/check_travis_tag.py
   - docker build -t aiida_raspa_test .
   - export DOCKERID=`docker run -d aiida_raspa_test`
+  - sleep 20
+  - docker logs $DOCKERID
   - docker exec --tty $DOCKERID wait-for-services
 
 script:
