@@ -89,10 +89,8 @@ def example_base_workchain_gcmc(raspa_code):
         "irmof_1_xenon": block_pocket_node2,
     }
 
-    # Add fixers that could handle physics-related problems.
-    builder.fixers = {
-        'fixer_001': ('aiida_raspa.utils', 'check_gcmc_convergence', 0.10, 2000, 2000),
-    }
+    builder.handler_overrides = Dict(dict={'check_gcmc_convergence': True
+                                          })  # Enable gcmc convergence handler disabled by default.
 
     # Specifying the scheduler options
     builder.raspa.metadata.options = {

@@ -86,8 +86,8 @@ def example_base_restart_timeout(raspa_code):
             "num_mpiprocs_per_machine": 1,
         },
         "max_wallclock_seconds": 1 * 30 * 60,  # 30 min
-        "withmpi": True,
-        "mpirun_extra_params": ["timeout", "5"],  # kill the calculation after 5 seconds, to test restart
+        "withmpi": True,  # A trick to put the kill below before raspa command.
+        "mpirun_extra_params": ["timeout", "5"],  # Kill the calculation after 5 seconds, to test restart.
     }
 
     # Specify RaspaBaseWorkChain options

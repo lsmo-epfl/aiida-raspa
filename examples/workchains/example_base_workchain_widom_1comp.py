@@ -69,10 +69,9 @@ def example_base_workchain_widom(raspa_code):
         "block_tcc1rs_xenon": block_pocket_node1,
     }
 
-    # Add fixers that could handle physics-related problems.
-    builder.fixers = {
-        'fixer_001': ('aiida_raspa.utils', 'check_widom_convergence', 0.10, 2000),
-    }
+    # Add handlers that could handle physics-related problems.
+    builder.handler_overrides = Dict(dict={'check_widom_convergence': True
+                                          })  # Enable widom convergence handler disabled by default.
 
     # Specifying the scheduler options
     builder.raspa.metadata.options = {
