@@ -23,9 +23,9 @@ def example_block_pockets(raspa_code, submit=True):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 400,
-                "NumberOfInitializationCycles": 200,
-                "PrintEvery": 200,
+                "NumberOfCycles": 50,
+                "NumberOfInitializationCycles": 50,
+                "PrintEvery": 10,
                 "Forcefield": "GenericMOFs",
                 "RemoveAtomNumberCodeFromLabel": True,
                 "EwaldPrecision": 1e-6,
@@ -115,10 +115,10 @@ def example_block_pockets(raspa_code, submit=True):
               "containing 2 molecules (metahne/xenon) and block pockets ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Total Energy average (irmof_1):",
-              res['output_parameters'].dict.irmof_1['general']['total_energy_average'])
-        print("Total Energy average (irmof_10):",
-              res['output_parameters'].dict.irmof_10['general']['total_energy_average'])
+        print("Average number of methane molecules/uc (irmof-1):",
+              res['output_parameters'].dict.irmof_1['components']['methane']['loading_absolute_average'])
+        print("Average number of methane molecules/uc (irmof-10):",
+              res['output_parameters'].dict.irmof_1['components']['methane']['loading_absolute_average'])
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")

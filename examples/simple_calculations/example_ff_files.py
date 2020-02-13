@@ -20,9 +20,9 @@ def example_ff_files(raspa_code, submit=True):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfInitializationCycles": 200,
-                "NumberOfCycles": 300,
-                "PrintEvery": 100,
+                "NumberOfInitializationCycles": 50,
+                "NumberOfCycles": 50,
+                "PrintEvery": 10,
                 "Forcefield": "Local",
                 "ChargeMethod": "Ewald",
                 "EwaldPrecision": 1e-6,

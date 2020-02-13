@@ -24,9 +24,9 @@ def example_base_workchain_gcmc(raspa_code):
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 2000,
-                "NumberOfInitializationCycles": 2000,
-                "PrintEvery": 200,
+                "NumberOfCycles": 50,
+                "NumberOfInitializationCycles": 50,
+                "PrintEvery": 10,
                 "Forcefield": "GenericMOFs",
                 "RemoveAtomNumberCodeFromLabel": True,
                 "EwaldPrecision": 1e-6,

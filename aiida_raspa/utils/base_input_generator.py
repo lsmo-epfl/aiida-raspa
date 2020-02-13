@@ -84,11 +84,13 @@ class RaspaInput:
         return "\n".join(output) + "\n"
 
     def _dict_to_ordered_list(self, input_dict):
-        """Convert dictionary {"framework_name1": something1, "framework_name2": something2}
+        """Convert dict to ordered list.
+
+        Convert dictionary {"framework_name1": something1, "framework_name2": something2}
         to [something2, something1], where the order is defined by self.system_order list
 
         :param input_dict: dictionary that looks as folows {"framework_name1": something1,
-        "framework_name2": something2}
+            "framework_name2": something2}
         :type input_dict: dict
 
 

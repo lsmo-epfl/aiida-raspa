@@ -12,6 +12,13 @@ from .other_utilities import ErrorHandlerReport
 
 
 @calcfunction
+def add_write_binary_restart(input_dict, write_every):
+    final_dict = input_dict.get_dict()
+    final_dict["GeneralSettings"]["WriteBinaryRestartFileEvery"] = write_every
+    return input_dict if input_dict.get_dict() == final_dict else Dict(dict=final_dict)
+
+
+@calcfunction
 def modify_number_of_cycles(input_dict, additional_init_cycle, additional_prod_cycle):
     """Modify number of cycles to improve the convergence."""
     final_dict = input_dict.get_dict()
@@ -179,7 +186,6 @@ def check_gemc_box(workchain, calc):
 
     if not all(box_one_stat and box_two_stat):
         workchain.report("GEMC box is NOT converged: repeating with increase box...")
-        workchain.ctx.inputs.retrieved_parent_folder = calc.outputs['retrieved']
         # Fixing the issue.
         if not all(box_one_stat):
             workchain.ctx.inputs.parameters = increase_box_lenght(workchain.ctx.inputs.parameters, Str("box_one"),

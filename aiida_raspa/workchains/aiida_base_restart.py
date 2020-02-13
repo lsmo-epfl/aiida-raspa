@@ -92,7 +92,7 @@ class BaseRestartWorkChain(WorkChain):
         """Define the process specification."""
         # yapf: disable
         super(BaseRestartWorkChain, cls).define(spec)
-        spec.input('max_iterations', valid_type=orm.Int, default=orm.Int(5),
+        spec.input('max_iterations', valid_type=orm.Int, default=lambda: orm.Int(5),
             help='Maximum number of iterations the work chain will restart the calculation to finish successfully.')
         spec.input('clean_workdir', valid_type=orm.Bool, default=orm.Bool(False),
             help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
@@ -187,10 +187,10 @@ class BaseRestartWorkChain(WorkChain):
             exit_code = self._handle_unexpected_failure(calculation, exception)
 
         # If the exit code returned actually has status `0` that means we consider the calculation as successful
-        if isinstance(exit_code, ExitCode) and exit_code.status == 0:
-            self.ctx.is_finished = True
-
-        return exit_code
+        if isinstance(exit_code, ExitCode):
+            if  exit_code.status == 0:
+                self.ctx.is_finished = True
+            return exit_code
 
     def results(self):
         """Attach the outputs specified in the output specification from the last completed calculation."""

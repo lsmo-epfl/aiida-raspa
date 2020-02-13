@@ -1,6 +1,6 @@
 {
     "name": "aiida-raspa",
-    "version": "1.0.0a3",
+    "version": "1.0.0",
     "author": "Aliaksandr Yakutovich",
     "author_email": "aliaksandr.yakutovich@epfl.ch",
     "description": "AiiDA plugin for RASPA code",
@@ -11,7 +11,8 @@
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
-        "Development Status :: 4 - Beta"
+        "Framework :: AiiDA",
+        "Development Status :: 5 - Production/Stable"
     ],
     "setup_requires": ["reentry"],
     "reentry_register": true,
@@ -40,11 +41,17 @@
             "coverage"
         ],
         "pre-commit": [
-                "pre-commit==1.16.1",
-                "yapf==0.27.0",
-                "prospector==1.1.6.2",
+                "pre-commit==1.18.3",
+                "yapf==0.28.0",
+                "prospector==1.1.7",
                 "pylint==1.9.4; python_version<'3.0'",
-                "pylint==2.2.2; python_version>='3.0'"
+                "pylint==2.3.1; python_version>='3.0'"
+        ],
+        "docs": [
+            "sphinx",
+            "sphinx-rtd-theme",
+            "sphinxcontrib-contentui",
+            "sphinxcontrib-details-directive; python_version>='3.0'"
         ]
     }
 }

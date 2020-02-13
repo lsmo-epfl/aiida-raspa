@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Two-component Widom insertion through RaspaBaseWorkChain"""
+"""Example for RaspaBaseWorkChain."""
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -9,56 +9,58 @@ import click
 
 from aiida.common import NotExistent
 from aiida.engine import run
-from aiida.orm import CifData, Code, Dict, SinglefileData
+from aiida.orm import CifData, Code, Dict, SinglefileData, Int
 from aiida_raspa.workchains import RaspaBaseWorkChain
 
 
-def example_base_workchain_widom_2(raspa_code):
-    """Run base workchain for widom insertion calculation (1 component)."""
+def example_base_restart_timeout(raspa_code):
+    """Run base workchain for GCMC with restart after timeout."""
 
     # pylint: disable=no-member
 
-    print("Testing RASPA Xenon and Krypton widom insertion through RaspaBaseWorkChain ...")
+    print("Testing RaspaBaseWorkChain restart after timeout...")
+    print("This long simulation will require ca. 3 iterations (i.e., 2 restarts).")
 
     parameters = Dict(
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
-                "NumberOfCycles": 50,
-                "PrintEvery": 10,
+                "NumberOfInitializationCycles": 5000,  # many, to pass timeout
+                "NumberOfCycles": 5000,  # many, to pass timeout
+                "PrintEvery": 1000,
                 "Forcefield": "GenericMOFs",
-                "EwaldPrecision": 1e-6,
+                "RemoveAtomNumberCodeFromLabel": True,
+                "ChargeMethod": "None",
                 "CutOff": 12.0,
+                # WriteBinaryRestartFileEvery not needed: if missing RaspaBaseWorkChain will assign a default of 1000
             },
             "System": {
-                "tcc1rs": {
+                "irmof_1": {
                     "type": "Framework",
+                    "UnitCells": "1 1 1",
                     "ExternalTemperature": 300.0,
+                    "ExternalPressure": 1e5,
                 }
             },
             "Component": {
                 "krypton": {
                     "MoleculeDefinition": "TraPPE",
-                    "WidomProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
-                    "BlockPocketsFileName": "block_tcc1rs_methane",
-                },
-                "xenon": {
-                    "MoleculeDefinition": "TraPPE",
-                    "WidomProbability": 1.0,
-                    "CreateNumberOfMolecules": 0,
-                    "BlockPocketsFileName": "block_tcc1rs_xenon",
+                    "TranslationProbability": 0.5,
+                    "ReinsertionProbability": 0.5,
+                    "SwapProbability": 1.0,
+                    "BlockPocketsFileName": {
+                        "irmof_1": "irmof_1_krypton",
+                    },
                 },
             },
         })
 
     # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
-    structure = CifData(file=os.path.join(pwd, '..', 'files', 'TCC1RS.cif'))
-    structure_label = structure.filename[:-4].lower()
+    structure = CifData(file=os.path.join(pwd, '..', 'files', 'IRMOF-1.cif'))
+    structure_label = "irmof_1"
 
-    block_pocket_node1 = SinglefileData(file=os.path.join(pwd, '..', 'files', 'block_pocket.block')).store()
-    block_pocket_node2 = SinglefileData(file=os.path.join(pwd, '..', 'files', 'block_pocket.block')).store()
+    block_pocket_node1 = SinglefileData(file=os.path.join(pwd, '..', 'files', 'IRMOF-1_test.block')).store()
 
     # Constructing builder
     builder = RaspaBaseWorkChain.get_builder()
@@ -76,13 +78,7 @@ def example_base_workchain_widom_2(raspa_code):
 
     # Specifying the block pockets
     builder.raspa.block_pocket = {
-        "block_tcc1rs_methane": block_pocket_node1,
-        "block_tcc1rs_xenon": block_pocket_node2,
-    }
-
-    # Add fixers that could handle physics-related problems.
-    builder.fixers = {
-        'fixer_001': ('aiida_raspa.utils', 'check_widom_convergence', 0.1, 2000),
+        "irmof_1_krypton": block_pocket_node1,
     }
 
     # Specifying the scheduler options
@@ -92,8 +88,12 @@ def example_base_workchain_widom_2(raspa_code):
             "num_mpiprocs_per_machine": 1,
         },
         "max_wallclock_seconds": 1 * 30 * 60,  # 30 min
-        "withmpi": False,
+        "withmpi": True,
+        "mpirun_extra_params": ["timeout", "5"],  # kill the calculation after 5 seconds, to test restart
     }
+
+    # Specify RaspaBaseWorkChain options
+    builder.max_iterations = Int(8)  # number of maximum iterations: prevent for infinite restart (default: 5)
 
     run(builder)
 
@@ -107,7 +107,7 @@ def cli(codelabel):
     except NotExistent:
         print("The code '{}' does not exist".format(codelabel))
         sys.exit(1)
-    example_base_workchain_widom_2(code)
+    example_base_restart_timeout(code)
 
 
 if __name__ == '__main__':
