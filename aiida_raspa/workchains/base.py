@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Base workchain to run a RASPA calculation"""
-from __future__ import absolute_import
 
 from aiida.common import AttributeDict
 from aiida.engine import while_
@@ -20,7 +19,7 @@ class RaspaBaseWorkChain(BaseRestartWorkChain):
 
     @classmethod
     def define(cls, spec):
-        super(RaspaBaseWorkChain, cls).define(spec)
+        super().define(spec)
         spec.expose_inputs(RaspaCalculation, namespace='raspa')
         spec.outline(
             cls.setup,
@@ -35,9 +34,9 @@ class RaspaBaseWorkChain(BaseRestartWorkChain):
     def setup(self):
         """Call the `setup` of the `BaseRestartWorkChain` and then create the inputs dictionary in `self.ctx.inputs`.
         This `self.ctx.inputs` dictionary will be used by the `BaseRestartWorkChain` to submit the calculations in the
-        internal loop.
-        """
-        super(RaspaBaseWorkChain, self).setup()
+        internal loop."""
+
+        super().setup()
         self.ctx.inputs = AttributeDict(self.exposed_inputs(RaspaCalculation, 'raspa'))
         if "WriteBinaryRestartFileEvery" not in self.ctx.inputs.parameters["GeneralSettings"]:
             self.ctx.inputs.parameters = add_write_binary_restart(self.ctx.inputs.parameters, Int(1000))

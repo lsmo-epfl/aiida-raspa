@@ -96,7 +96,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'aiida-raspa'
+project = 'aiida-raspa'
 copyright_first_year = "2019"
 copyright_owners = "The AiiDA Team"
 
@@ -104,7 +104,7 @@ current_year = str(time.localtime().tm_year)
 copyright_year_string = current_year if current_year == copyright_first_year else "{}-{}".format(
     copyright_first_year, current_year)
 # pylint: disable=redefined-builtin
-copyright = u'{}, {}. All rights reserved'.format(copyright_year_string, copyright_owners)
+copyright = '{}, {}. All rights reserved'.format(copyright_year_string, copyright_owners)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

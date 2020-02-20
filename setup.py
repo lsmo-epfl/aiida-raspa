@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """Setting up RASPA plugin for AiiDA"""
-from __future__ import print_function
-from __future__ import absolute_import
 
 import json
 from setuptools import setup, find_packages
