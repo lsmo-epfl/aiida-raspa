@@ -1,6 +1,6 @@
 {
     "name": "aiida-raspa",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "author": "Aliaksandr Yakutovich",
     "author_email": "aliaksandr.yakutovich@epfl.ch",
     "description": "AiiDA plugin for RASPA code",
