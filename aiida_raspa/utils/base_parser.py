@@ -147,8 +147,13 @@ def parse_base_output(output_abs_path, system_name, ncomponents):
         component_names = []
         res_cmp = res_per_component[0]
         for line in fobj:
-            if "Component" in line and "(Adsorbate molecule)" in line:
+            if "Component" in line and "molecule)" in line:
                 component_names.append(line.split()[2][1:-1])
+                if "(Adsorbate" in line:
+                    res_cmp['molecule_type'] = 'adsorbate'
+                elif "(Cation" in line:
+                    res_cmp['molecule_type'] = 'cation'
+
             # Consider to change it with parse_line()
             if "Conversion factor molecules/unit cell -> mol/kg:" in line:
                 res_cmp['conversion_factor_molec_uc_to_mol_kg'] = float(line.split()[6])
