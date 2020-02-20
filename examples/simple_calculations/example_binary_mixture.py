@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """Run RASPA calculation with components mixture."""
 
-from __future__ import print_function
-from __future__ import absolute_import
 import sys
 import click
 

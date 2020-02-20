@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """Basic raspa input generator."""
-from __future__ import absolute_import
 from copy import deepcopy
-import six
 
 ORDERED_ITEMS_COMPONENT_SECTION = [
     "NumberOfIdentityChanges",
@@ -63,7 +61,7 @@ class RaspaInput:
 
                     molecule["BlockPocketsFileName"] = bps
                     molecule["BlockPockets"] = ["yes" if bp else "no" for bp in bps]
-                elif isinstance(molecule["BlockPocketsFileName"], six.string_types):
+                elif isinstance(molecule["BlockPocketsFileName"], str):
                     molecule["BlockPockets"] = "yes"
 
             if "CreateNumberOfMolecules" in molecule:

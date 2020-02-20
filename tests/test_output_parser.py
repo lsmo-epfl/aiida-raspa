@@ -1,7 +1,5 @@
 """Test Raspa output parser"""
 
-from __future__ import absolute_import
-
 import os
 
 from aiida_raspa.utils import parse_base_output

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """Raspa output parser."""
-from __future__ import absolute_import
 import os
-from six.moves import range
 
 from aiida.common import NotExistent, OutputParsingError
 from aiida.engine import ExitCode

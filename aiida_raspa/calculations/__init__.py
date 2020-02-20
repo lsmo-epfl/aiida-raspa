@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 """Raspa input plugin."""
-from __future__ import absolute_import
 import os
 from shutil import copyfile, copytree
-import six
-from six.moves import map, range
 
 from aiida.orm import Dict, FolderData, List, RemoteData, SinglefileData
 from aiida.common import CalcInfo, CodeInfo, InputValidationError
@@ -31,7 +28,7 @@ class RaspaCalculation(CalcJob):
 
     @classmethod
     def define(cls, spec):
-        super(RaspaCalculation, cls).define(spec)
+        super().define(spec)
 
         #Input parameters
         spec.input('parameters', valid_type=Dict, required=True, help='Input parameters')
@@ -55,7 +52,7 @@ class RaspaCalculation(CalcJob):
                    valid_type=FolderData,
                    required=False,
                    help='To use an old calculation as a starting poing for a new one.')
-        spec.input('metadata.options.parser_name', valid_type=six.string_types, default=cls.DEFAULT_PARSER, non_db=True)
+        spec.input('metadata.options.parser_name', valid_type=str, default=cls.DEFAULT_PARSER, non_db=True)
 
         # Output parameters
         spec.output('output_parameters', valid_type=Dict, required=True, help="The results of a calculation")

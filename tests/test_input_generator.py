@@ -1,7 +1,5 @@
 """Test Raspa input generator"""
 
-from __future__ import absolute_import
-
 import pytest
 
 from aiida_raspa.utils import RaspaInput
