@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """One-component Widom particle insertion through RaspaBaseWorkChain"""
 
-from __future__ import absolute_import
-from __future__ import print_function
 import os
 import sys
 import click
