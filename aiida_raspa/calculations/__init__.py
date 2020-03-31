@@ -52,7 +52,13 @@ class RaspaCalculation(CalcJob):
                    valid_type=FolderData,
                    required=False,
                    help='To use an old calculation as a starting poing for a new one.')
-        spec.input('metadata.options.parser_name', valid_type=str, default=cls.DEFAULT_PARSER, non_db=True)
+        spec.inputs['metadata']['options']['parser_name'].default = cls.DEFAULT_PARSER
+        spec.inputs['metadata']['options']['resources'].default = {
+            'num_machines': 1,
+            'num_mpiprocs_per_machine': 1,
+            'num_cores_per_mpiproc': 1,
+        }
+        spec.inputs['metadata']['options']['withmpi'].default = False
 
         # Output parameters
         spec.output('output_parameters', valid_type=Dict, required=True, help="The results of a calculation")
