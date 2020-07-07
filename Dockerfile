@@ -17,8 +17,8 @@ RUN pip install coveralls
 # Install necessary codes to build RASPA2.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get install -y --no-install-recommends  \
     automake \
-    libtool
-
+    libtool  \
+    mpich
 
 # Download, compile and install RASPA into ~/code folder.
 RUN git clone https://github.com/iRASPA/RASPA2.git RASPA2

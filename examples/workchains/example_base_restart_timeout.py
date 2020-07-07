@@ -6,7 +6,7 @@ import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
+from aiida.engine import run_get_node
 from aiida.orm import CifData, Code, Dict, SinglefileData, Int
 from aiida_raspa.workchains import RaspaBaseWorkChain
 
@@ -93,7 +93,8 @@ def example_base_restart_timeout(raspa_code):
     # Specify RaspaBaseWorkChain options
     builder.max_iterations = Int(8)  # number of maximum iterations: prevent for infinite restart (default: 5)
 
-    run(builder)
+    _, node = run_get_node(builder)
+   assert node.exit_status == 0
 
 
 @click.command('cli')

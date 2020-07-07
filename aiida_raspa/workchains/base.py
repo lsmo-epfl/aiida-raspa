@@ -64,7 +64,7 @@ class RaspaBaseWorkChain(BaseRestartWorkChain):
         error bar of the Henry coefficient."""
 
         conv_threshold = 0.1
-        additional_cycle = 0
+        additional_cycle = 2000
 
         output_widom = calculation.outputs.output_parameters.get_dict()
         structure_label = list(calculation.get_incoming().nested()['framework'].keys())[0]
@@ -95,8 +95,8 @@ class RaspaBaseWorkChain(BaseRestartWorkChain):
     def check_gcmc_convergence(self, calc):
         """Checks whether a GCMC calc is converged. Checking is based on the error bar on average loading."""
         conv_threshold = 0.1
-        additional_init_cycle = 0
-        additional_prod_cycle = 0
+        additional_init_cycle = 2000
+        additional_prod_cycle = 2000
 
         output_gcmc = calc.outputs.output_parameters.get_dict()
         structure_label = list(calc.get_incoming().nested()['framework'].keys())[0]
@@ -131,12 +131,12 @@ class RaspaBaseWorkChain(BaseRestartWorkChain):
 
     @process_handler(priority=410, enabled=False)
     def check_gemc_convergence(self, calc):
-        """Checks whether a GCMC calc is converged. Checking is based on the error bar on average loading which is
+        """Checks whether a GEMC calc is converged. Checking is based on the error bar on average loading which is
         average number of molecules in each simulation box."""
 
         conv_threshold = 0.1
-        additional_init_cycle = 0
-        additional_prod_cycle = 0
+        additional_init_cycle = 2000
+        additional_prod_cycle = 2000
 
         output_gemc = calc.outputs.output_parameters.get_dict()
         conv_stat = []

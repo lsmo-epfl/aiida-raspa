@@ -5,7 +5,7 @@ import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
+from aiida.engine import run_get_node
 from aiida.orm import Code, Dict
 from aiida_raspa.workchains import RaspaBaseWorkChain
 
@@ -82,8 +82,8 @@ def example_base_workchain_gemc(raspa_code):
         "withmpi": False,
     }
 
-    run(builder)
-
+     _, node = run_get_node(builder)
+    assert node.exit_status == 0
 
 @click.command('cli')
 @click.argument('codelabel')
