@@ -91,7 +91,7 @@ def example_base_workchain_widom_2(raspa_code):
         "withmpi": False,
     }
 
-     _, node = run_get_node(builder)
+    _, node = run_get_node(builder)
     assert node.exit_status == 0
 
 

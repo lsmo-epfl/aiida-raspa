@@ -82,8 +82,9 @@ def example_base_workchain_gemc(raspa_code):
         "withmpi": False,
     }
 
-     _, node = run_get_node(builder)
+    _, node = run_get_node(builder)
     assert node.exit_status == 0
+
 
 @click.command('cli')
 @click.argument('codelabel')

@@ -94,7 +94,7 @@ def example_base_restart_timeout(raspa_code):
     builder.max_iterations = Int(8)  # number of maximum iterations: prevent for infinite restart (default: 5)
 
     _, node = run_get_node(builder)
-   assert node.exit_status == 0
+    assert node.exit_status == 0
 
 
 @click.command('cli')

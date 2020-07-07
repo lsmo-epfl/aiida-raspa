@@ -103,7 +103,8 @@ def example_base_workchain_gcmc(raspa_code):
     }
 
     _, node = run_get_node(builder)
-   assert node.exit_status == 0
+    assert node.exit_status == 0
+
 
 @click.command('cli')
 @click.argument('codelabel')
