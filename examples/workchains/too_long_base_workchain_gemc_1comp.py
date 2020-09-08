@@ -5,7 +5,7 @@ import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
+from aiida.engine import run_get_node
 from aiida.orm import Code, Dict
 from aiida_raspa.workchains import RaspaBaseWorkChain
 
@@ -66,11 +66,11 @@ def example_base_workchain_gemc(raspa_code):
     # Specifying the input parameters
     builder.raspa.parameters = parameters
 
-    # Add fixers that could handle physics-related problems.
-    builder.fixers = {
-        'fixer_001': ('aiida_raspa.utils', 'check_gemc_box'),
-        'fixer_002': ('aiida_raspa.utils', 'check_gemc_convergence', 0.8, 200, 200),
-    }
+    # Add handlers that could handle physics-related problems.
+    builder.handler_overrides = Dict(dict={
+        'check_gemc_box': True,
+        'check_gemc_convergence': True,
+    })  # Enable gemc handlers disabled by default.
 
     # Specifying the scheduler options
     builder.raspa.metadata.options = {
@@ -82,7 +82,8 @@ def example_base_workchain_gemc(raspa_code):
         "withmpi": False,
     }
 
-    run(builder)
+    _, node = run_get_node(builder)
+    assert node.exit_status == 0
 
 
 @click.command('cli')

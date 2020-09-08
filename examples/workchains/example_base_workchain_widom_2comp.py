@@ -6,7 +6,7 @@ import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
+from aiida.engine import run_get_node
 from aiida.orm import CifData, Code, Dict, SinglefileData
 from aiida_raspa.workchains import RaspaBaseWorkChain
 
@@ -78,10 +78,8 @@ def example_base_workchain_widom_2(raspa_code):
         "block_tcc1rs_xenon": block_pocket_node2,
     }
 
-    # Add fixers that could handle physics-related problems.
-    builder.fixers = {
-        'fixer_001': ('aiida_raspa.utils', 'check_widom_convergence', 0.1, 2000),
-    }
+    builder.handler_overrides = Dict(dict={'check_widom_convergence': True
+                                          })  # Enable widom convergence handler disabled by default.
 
     # Specifying the scheduler options
     builder.raspa.metadata.options = {
@@ -93,7 +91,8 @@ def example_base_workchain_widom_2(raspa_code):
         "withmpi": False,
     }
 
-    run(builder)
+    _, node = run_get_node(builder)
+    assert node.exit_status == 0
 
 
 @click.command('cli')

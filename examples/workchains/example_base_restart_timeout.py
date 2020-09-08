@@ -6,7 +6,7 @@ import sys
 import click
 
 from aiida.common import NotExistent
-from aiida.engine import run
+from aiida.engine import run_get_node
 from aiida.orm import CifData, Code, Dict, SinglefileData, Int
 from aiida_raspa.workchains import RaspaBaseWorkChain
 
@@ -86,14 +86,15 @@ def example_base_restart_timeout(raspa_code):
             "num_mpiprocs_per_machine": 1,
         },
         "max_wallclock_seconds": 1 * 30 * 60,  # 30 min
-        "withmpi": True,
-        "mpirun_extra_params": ["timeout", "5"],  # kill the calculation after 5 seconds, to test restart
+        "withmpi": True,  # A trick to put the kill below before raspa command.
+        "mpirun_extra_params": ["timeout", "5"],  # Kill the calculation after 5 seconds, to test restart.
     }
 
     # Specify RaspaBaseWorkChain options
     builder.max_iterations = Int(8)  # number of maximum iterations: prevent for infinite restart (default: 5)
 
-    run(builder)
+    _, node = run_get_node(builder)
+    assert node.exit_status == 0
 
 
 @click.command('cli')
