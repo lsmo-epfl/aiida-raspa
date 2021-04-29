@@ -4,31 +4,6 @@ on: [push, pull_request]
 
 jobs:
 
-  #compile:
-  #  runs-on: ubuntu-latest
-  #  timeout-minutes: 30
-  #  steps:
-  #  - uses: actions/checkout@v1
-  #  - name: Get network binary from cache (or start caching)
-  #    id: zeopp-cache
-  #    uses: actions/cache@v1
-  #    with:
-  #      path: ./zeoplusplus/bin
-  #      key: zeopp
-  #  - name: Install Zeo++
-  #    if: steps.zeopp-cache.outputs.cache-hit != 'true'
-  #    run: |
-  #      git clone https://github.com/lsmo-epfl/zeopp-lsmo -b master zeoplusplus
-  #      cd zeoplusplus
-  #      wget https://gitlab.com/libeigen/eigen/-/archive/3.2.7/eigen-3.2.7.tar.bz2
-  #      tar xf eigen-3.2.7.tar.bz2
-  #      cd voro++/src
-  #      make
-  #      cd ../..
-  #      make
-  #      mkdir bin
-  #      cp network bin
-
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -114,4 +89,3 @@ jobs:
       run: |
         pre-commit install
         pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
-                                                              11
