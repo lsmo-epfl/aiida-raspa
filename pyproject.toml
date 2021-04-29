@@ -21,3 +21,17 @@ filterwarnings = [
     "ignore::DeprecationWarning:yaml:",
     "ignore::DeprecationWarning:pymatgen:",
 ]
+
+[tool.pylint.basic]
+good-names = [
+    "_",
+    "x",
+    "y",
+    "z",
+    "i",
+    "j",
+    "k",
+    "pk",
+]
+no-docstring-rgx = "^_,setUp,tearDown"
+docstring-min-length = 5

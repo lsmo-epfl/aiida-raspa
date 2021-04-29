@@ -16,7 +16,7 @@ class RaspaParser(Parser):
     """Parse RASPA output"""
 
     # --------------------------------------------------------------------------
-    def parse(self, **kwargs):
+    def parse(self, **kwargs):  # pylint: disable=too-many-locals
         """Receives in input a dictionary of retrieved nodes. Does all the logic here."""
         try:
             out_folder = self.retrieved
