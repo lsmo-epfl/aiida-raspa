@@ -1,90 +1,56 @@
-name: Build
+name: Continuous Integration
 
-on: [push, pull_request]
+on:
+  [push, pull_request]
 
 jobs:
 
-  tests:
+  test-plugin:
+
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
-    strategy:
-      matrix:
-        python-version: [3.8]
-        aiida-version: ['stable', 'develop']
-
-    services:
-      postgres:
-        image: postgres:12
-        env:
-          POSTGRES_DB: test
-          POSTGRES_PASSWORD: ''
-          POSTGRES_HOST_AUTH_METHOD: trust
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      rabbitmq:
-        image: rabbitmq:latest
-        ports:
-          - 5672:5672
     steps:
-     - uses: actions/checkout@v2
 
-     - uses: conda-incubator/setup-miniconda@v2
-     - name: Install raspa
-       run: conda install -y -c conda-forge raspa2
-
-     - name: Set up Python ${{ matrix.python-version }}
-       uses: actions/setup-python@v2
-       with:
-         python-version: ${{ matrix.python-version }}
-
-     - name: Install aiida develop version
-       run: |
-         pip install git+git://github.com/aiidateam/aiida-core
-       if: ${{ matrix.aiida-version == 'develop' }}
-
-     - name: Install python dependencies
-       run: |
-         pip install -e .[test]
-         reentry scan
-         
-     - name: Set up raspa code
-       run: |
-         verdi code setup --config .docker/raspa-code.yml --non-interactive
-
-     - name: Run pytest
-       run: |
-         pytest --cov-report=xml --cov=./aiida_raspa
-     - name: Upload coverage to codecov
-       uses: codecov/codecov-action@v1
-       with:
-         file: ./coverage.xml
-       continue-on-error: ${{ matrix.aiida-version == 'develop' }}  # allow failures against develop
-
-
-  pre-commit:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      matrix:
-        python-version: [3.8]
-    steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install python dependencies
+
+    - name: Install docker
       run: |
-        pip install --upgrade pip
-        pip install -e .[pre-commit,test]
-        reentry scan
+        sudo apt-get update
+        sudo apt-get install apt-transport-https ca-certificates curl software-properties-common
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu  $(lsb_release -cs)  stable"
+        sudo apt-get update
+        sudo apt-get install docker-ce
+
+    - name: Build the Docker image
+      run: |
+        docker build -t aiida_raspa_test .
+
     - name: Run pre-commit
       run: |
-        pre-commit install
-        pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
+        export DOCKERID=`docker run -d aiida_raspa_test`
+        docker exec --tty $DOCKERID wait-for-services
+        docker logs $DOCKERID
+        docker exec --tty --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )'
+
+    - name: Run tests
+      run: |
+        export DOCKERID=`docker run -d aiida_raspa_test`
+        docker exec --tty --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && py.test --cov aiida_raspa --cov-append .'
+
+    - name: Run build docs
+      run: |
+        export DOCKERID=`docker run -d aiida_raspa_test`
+        docker exec --tty --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/docs && make'
+
+  #  - docker exec -it --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )'
+  #  - docker exec -it --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && py.test --cov aiida_raspa --cov-append .'
+  #  - docker exec -it --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/docs && make'
+
+
+        #after_script:
+        #  - docker logs $DOCKERID
+
+        #after_success:
+        #  - docker exec -e TRAVIS=$TRAVIS -e TRAVIS_JOB_ID=$TRAVIS_JOB_ID -e TRAVIS_BRANCH=$TRAVIS_BRANCH -it --user aiida $DOCKERID /bin/bash -l -c 'cd code/aiida-raspa/ && coveralls'
