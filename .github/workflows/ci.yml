@@ -49,13 +49,8 @@ jobs:
         docker exec --tty $DOCKERID wait-for-services
         docker logs $DOCKERID
         docker exec --tty --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && py.test --cov aiida_raspa --cov-append .'
-        docker cp $DOCKERID:/opt/aiida-raspa/.coverage .
         # see https://docs.github.com/en/actions/reference/environment-variables#default-environment-variables
-        env | grep GITHUB_ > .env
-        echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> .env
-        docker exec --tty --user aiida --env-file .env $DOCKERID /bin/bash -l -c 'env'
-        docker exec --tty --user aiida --env-file .env $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && coveralls --service=github'
-        #docker exec -e TRAVIS=$TRAVIS -e TRAVIS_JOB_ID=$TRAVIS_JOB_ID -e TRAVIS_BRANCH=$TRAVIS_BRANCH -it --user aiida $DOCKERID /bin/bash -l -c 'cd code/aiida-raspa/ && coveralls'
+        docker exec --tty --user aiida --env-file <(env | grep GITHUB_) -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && coveralls --service=github'
 
 
   pre-commit:
