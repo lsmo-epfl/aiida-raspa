@@ -11,8 +11,9 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get in
     libtool
 
 # Download, compile and install RASPA into ~/code folder.
+WORKDIR /opt/
 RUN git clone https://github.com/iRASPA/RASPA2.git RASPA2
-WORKDIR /opt/RASPA2
+workdir /opt/raspa2
 RUN rm -rf autom4te.cache
 RUN mkdir m4
 RUN aclocal
