@@ -1,0 +1,117 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+
+  #compile:
+  #  runs-on: ubuntu-latest
+  #  timeout-minutes: 30
+  #  steps:
+  #  - uses: actions/checkout@v1
+  #  - name: Get network binary from cache (or start caching)
+  #    id: zeopp-cache
+  #    uses: actions/cache@v1
+  #    with:
+  #      path: ./zeoplusplus/bin
+  #      key: zeopp
+  #  - name: Install Zeo++
+  #    if: steps.zeopp-cache.outputs.cache-hit != 'true'
+  #    run: |
+  #      git clone https://github.com/lsmo-epfl/zeopp-lsmo -b master zeoplusplus
+  #      cd zeoplusplus
+  #      wget https://gitlab.com/libeigen/eigen/-/archive/3.2.7/eigen-3.2.7.tar.bz2
+  #      tar xf eigen-3.2.7.tar.bz2
+  #      cd voro++/src
+  #      make
+  #      cd ../..
+  #      make
+  #      mkdir bin
+  #      cp network bin
+
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        python-version: [3.8]
+        aiida-version: ['stable', 'develop']
+
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_DB: test
+          POSTGRES_PASSWORD: ''
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      rabbitmq:
+        image: rabbitmq:latest
+        ports:
+          - 5672:5672
+
+   steps:
+    - uses: actions/checkout@v2
+
+    - uses: conda-incubator/setup-miniconda@v2
+    - name: Install raspa
+      run: conda install -y -c conda-forge raspa
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install aiida develop version
+      run: |
+        pip install git+git://github.com/aiidateam/aiida-core
+      if: ${{ matrix.aiida-version == 'develop' }}
+
+    - name: Install python dependencies
+      run: |
+        pip install -e .[test]
+        reentry scan
+        
+    - name: Set up raspa code
+      run: |
+        verdi code setup --config .docker/raspa-code.yml --non-interactive
+
+    - name: Run pytest
+      run: |
+        pytest --cov-report=xml --cov=./aiida_raspa
+    - name: Upload coverage to codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+      continue-on-error: ${{ matrix.aiida-version == 'develop' }}  # allow failures against develop
+
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: [3.8]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -e .[pre-commit,test]
+        reentry scan
+    - name: Run pre-commit
+      run: |
+        pre-commit install
+        pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
+                                                              11

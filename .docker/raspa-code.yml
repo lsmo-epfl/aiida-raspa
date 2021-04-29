@@ -3,6 +3,6 @@ computer: localhost
 description:
 input_plugin: raspa
 on_computer: True
-remote_abs_path: /opt/RASPA2_installed/bin/simulate
+remote_abs_path: /usr/share/miniconda/bin/simulate
 append_text:
-prepend_text: export RASPA2_DIR=/opt/RASPA2_installed/
+prepend_text: export RASPA2_DIR=/usr/share/miniconda
