@@ -5,20 +5,10 @@ ENV PATH="/opt/RASPA2_installed/bin/:${PATH}"
 ENV RASPA2_DIR=/opt/RASPA2_installed
 ENV KILL_ALL_RPOCESSES_TIMEOUT=50
 
-WORKDIR /opt/
-
-# Copy and install aiida-raspa plugin.
-COPY . aiida-raspa
-RUN pip install ./aiida-raspa[pre-commit,test,docs]
-
-# Install coveralls.
-RUN pip install coveralls
-
 # Install necessary codes to build RASPA2.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get install -y --no-install-recommends  \
     automake \
-    libtool  \
-    mpich
+    libtool
 
 # Download, compile and install RASPA into ~/code folder.
 RUN git clone https://github.com/iRASPA/RASPA2.git RASPA2
@@ -32,6 +22,15 @@ RUN autoconf
 RUN ./configure --prefix=${RASPA2_DIR}
 RUN make
 RUN make install
+
+WORKDIR /opt/
+
+# Install coveralls.
+RUN pip install coveralls
+
+# Copy and install aiida-raspa plugin.
+COPY . aiida-raspa
+RUN pip install ./aiida-raspa[pre-commit,test,docs]
 
 # Install the RASPA code to AiiDA.
 COPY .docker/opt/add-codes.sh /opt/
