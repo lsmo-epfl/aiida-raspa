@@ -10,7 +10,7 @@ module-naming-style="any"
 
 [tool.pytest.ini_options]
 python_files = "test_*.py example_*.py"
-python_functions = example_* test_*
+python_functions = "example_* test_*"
 filterwarnings = [
     "ignore::DeprecationWarning:aiida:",
     "ignore::DeprecationWarning:plumpy:",
