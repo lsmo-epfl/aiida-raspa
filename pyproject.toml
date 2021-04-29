@@ -4,7 +4,8 @@ max-line-length = 120
 [tool.pylint.messages_control]
 disable = [
     "too-many-ancestors",
-    "R0801",
+    "duplicate-code",
+    "import-outside-toplevel",
 ]
 module-naming-style="any"
 
