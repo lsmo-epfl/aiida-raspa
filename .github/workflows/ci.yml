@@ -36,7 +36,7 @@ jobs:
 
      - uses: conda-incubator/setup-miniconda@v2
      - name: Install raspa
-       run: conda install -y -c conda-forge raspa
+       run: conda install -y -c conda-forge raspa2
 
      - name: Set up Python ${{ matrix.python-version }}
        uses: actions/setup-python@v2
