@@ -50,7 +50,8 @@ jobs:
         docker logs $DOCKERID
         docker exec --tty --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && py.test --cov aiida_raspa --cov-append .'
         # see https://docs.github.com/en/actions/reference/environment-variables#default-environment-variables
-        docker exec --env-file <(env | grep GITHUB_) -it --user aiida $DOCKERID /bin/bash -l -c 'cd code/aiida-raspa/ && coveralls'
+        docker exec -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -it --user aiida $DOCKERID /bin/bash -l -c 'cd code/aiida-raspa/ && coveralls'
+        #docker exec -e GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}' --env-file <(env | grep GITHUB_) -it --user aiida $DOCKERID /bin/bash -l -c 'cd code/aiida-raspa/ && coveralls'
         #docker exec -e TRAVIS=$TRAVIS -e TRAVIS_JOB_ID=$TRAVIS_JOB_ID -e TRAVIS_BRANCH=$TRAVIS_BRANCH -it --user aiida $DOCKERID /bin/bash -l -c 'cd code/aiida-raspa/ && coveralls'
 
 
