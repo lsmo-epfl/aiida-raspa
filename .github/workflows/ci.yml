@@ -31,41 +31,40 @@ jobs:
         image: rabbitmq:latest
         ports:
           - 5672:5672
+    steps:
+     - uses: actions/checkout@v2
 
-   steps:
-    - uses: actions/checkout@v2
+     - uses: conda-incubator/setup-miniconda@v2
+     - name: Install raspa
+       run: conda install -y -c conda-forge raspa
 
-    - uses: conda-incubator/setup-miniconda@v2
-    - name: Install raspa
-      run: conda install -y -c conda-forge raspa
+     - name: Set up Python ${{ matrix.python-version }}
+       uses: actions/setup-python@v2
+       with:
+         python-version: ${{ matrix.python-version }}
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
+     - name: Install aiida develop version
+       run: |
+         pip install git+git://github.com/aiidateam/aiida-core
+       if: ${{ matrix.aiida-version == 'develop' }}
 
-    - name: Install aiida develop version
-      run: |
-        pip install git+git://github.com/aiidateam/aiida-core
-      if: ${{ matrix.aiida-version == 'develop' }}
+     - name: Install python dependencies
+       run: |
+         pip install -e .[test]
+         reentry scan
+         
+     - name: Set up raspa code
+       run: |
+         verdi code setup --config .docker/raspa-code.yml --non-interactive
 
-    - name: Install python dependencies
-      run: |
-        pip install -e .[test]
-        reentry scan
-        
-    - name: Set up raspa code
-      run: |
-        verdi code setup --config .docker/raspa-code.yml --non-interactive
-
-    - name: Run pytest
-      run: |
-        pytest --cov-report=xml --cov=./aiida_raspa
-    - name: Upload coverage to codecov
-      uses: codecov/codecov-action@v1
-      with:
-        file: ./coverage.xml
-      continue-on-error: ${{ matrix.aiida-version == 'develop' }}  # allow failures against develop
+     - name: Run pytest
+       run: |
+         pytest --cov-report=xml --cov=./aiida_raspa
+     - name: Upload coverage to codecov
+       uses: codecov/codecov-action@v1
+       with:
+         file: ./coverage.xml
+       continue-on-error: ${{ matrix.aiida-version == 'develop' }}  # allow failures against develop
 
 
   pre-commit:
