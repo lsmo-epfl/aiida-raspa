@@ -14,41 +14,22 @@ serve to show the default.
 import os
 import sys
 import time
-from aiida.manage import configuration
-from aiida.manage.manager import get_manager
+from aiida.manage.configuration import load_documentation_profile
 
 # pylint: disable=invalid-name,ungrouped-imports
 
 # -- AiiDA-related setup --------------------------------------------------
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
+# Load the dummy profile even if we are running locally, this way the documentation will succeed even if the current
+# default profile of the AiiDA installation does not use a Django backend.
+load_documentation_profile()
 
-# Enable rtd mode via `export READTHEDOCS=True`
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+# If we are not on READTHEDOCS load the Sphinx theme manually
+if not os.environ.get('READTHEDOCS', None):
+    import sphinx_rtd_theme
+    html_theme = 'sphinx_rtd_theme'
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
-if not on_rtd:  # only import and set the theme if we're building docs locally
-    try:
-        import sphinx_rtd_theme
-        html_theme = 'sphinx_rtd_theme'
-        html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-    except ImportError:
-        # No sphinx_rtd_theme installed
-        pass
-    # Load the database environment by first loading the profile and then loading the backend through the manager
-    config = configuration.get_config()
-    configuration.load_profile(config.default_profile_name)
-    get_manager().get_backend()
-else:
-    # Back-end settings for readthedocs online documentation.
-    configuration.IN_RT_DOC_MODE = True
-    configuration.BACKEND = "django"
-
-    configuration.reset_config()  # empty config was created when importing aiida
-    configuration.load_profile()  # load dummy config for RTD
-    # load DB backend (no schema check since no DB)
-    get_manager()._load_backend(schema_check=False)  # pylint: disable=protected-access
 
 # let's make sure the entry points are up to date
 try:
@@ -342,6 +323,7 @@ def run_apidoc(_):
 
 
 def setup(app):
+    """Set up documentation."""
     app.connect('builder-inited', run_apidoc)
 
 

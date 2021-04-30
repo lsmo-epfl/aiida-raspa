@@ -8,7 +8,7 @@ ORDERED_ITEMS_COMPONENT_SECTION = [
 ]
 
 
-class RaspaInput:
+class RaspaInput:  # pylint: disable=too-few-public-methods
     """Convert input dictionary into input file"""
 
     def __init__(self, params):

@@ -1,0 +1,98 @@
+name: Continuous Integration
+
+on: [push, pull_request]
+
+jobs:
+
+  test-plugin:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    # see https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#github-cache
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Build #and push
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        push: false
+        load: true
+        tags: aiida_raspa_test
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+    # Temp fix
+    # https://github.com/docker/build-push-action/issues/252
+    # https://github.com/moby/buildkit/issues/1896
+    - name: Move cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+    - name: Run tests
+      run: |
+        export DOCKERID=`docker run -d aiida_raspa_test`
+        docker exec --tty $DOCKERID wait-for-services
+        docker logs $DOCKERID
+        docker exec --tty --user aiida $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && py.test --cov aiida_raspa --cov-append .'
+        # see https://docs.github.com/en/actions/reference/environment-variables#default-environment-variables
+        docker exec --tty --user aiida --env-file <(env | grep GITHUB_) -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} $DOCKERID /bin/bash -l -c 'cd /opt/aiida-raspa/ && coveralls --service=github'
+
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: [3.8]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -e .[pre-commit,test,docs]
+        reentry scan
+    - name: Run pre-commit
+      run: |
+        pre-commit install
+        pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
+
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: [3.8]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -e .[docs,test]
+        reentry scan
+
+    - name: Build docs
+      run: |
+        cd docs && make

@@ -15,7 +15,7 @@
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
-        "aiida-core>=1.0.0,<2.0.0",
+        "aiida-core>=1.0.0,<3",
         "pycifrw"
     ],
     "entry_points": {
@@ -40,11 +40,10 @@
             "coverage"
         ],
         "pre-commit": [
-                "pre-commit==1.18.3",
+                "pre-commit~=2.2",
                 "yapf==0.28.0",
-                "prospector==1.1.7",
                 "pylint==1.9.4; python_version<'3.0'",
-                "pylint==2.3.1; python_version>='3.0'"
+                "pylint~=2.5.0; python_version>='3.0'"
         ],
         "docs": [
             "sphinx",
