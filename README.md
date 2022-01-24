@@ -49,9 +49,6 @@ verdi process list -a -p1                                # Check status of the w
 # License
 MIT
 
-# Contact
-yakutovicha@gmail.com
-
 
 # Acknowledgements
 This work is supported by:
