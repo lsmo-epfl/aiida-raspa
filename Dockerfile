@@ -1,4 +1,4 @@
-FROM aiidateam/aiida-core:latest
+FROM aiidateam/aiida-core:1.6.9
 
 # Set HOME, PATH and RASPA_DIR variables:
 ENV PATH="/opt/RASPA2_installed/bin/:${PATH}"
@@ -12,7 +12,7 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get in
 
 # Download, compile and install RASPA into ~/code folder.
 WORKDIR /opt/
-RUN git clone --depth 1 --branch v2.0.41 https://github.com/iRASPA/RASPA2.git RASPA2
+RUN git clone --depth 1 --branch v2.0.47 https://github.com/iRASPA/RASPA2.git RASPA2
 WORKDIR /opt/RASPA2
 RUN rm -rf autom4te.cache
 RUN mkdir m4
@@ -25,6 +25,11 @@ RUN make
 RUN make install
 
 WORKDIR /opt/
+
+# Grab the raspa data files from the aiida-lsmo-codes repository
+RUN git clone https://github.com/lsmo-epfl/aiida-lsmo-codes.git
+RUN rsync -av /opt/aiida-lsmo-codes/data/raspa/ /opt/RASPA2_installed
+RUN rm -rf aiida-lsmo-codes 
 
 # Install coveralls.
 RUN pip install coveralls

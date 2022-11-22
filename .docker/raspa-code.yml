@@ -5,4 +5,7 @@ input_plugin: raspa
 on_computer: True
 remote_abs_path: /opt/RASPA2_installed/bin/simulate
 append_text:
-prepend_text: export RASPA2_DIR=/opt/RASPA2_installed/
+prepend_text: |
+  export RASPA_DIR=/opt/RASPA2_installed/
+  export DYLD_LIBRARY_PATH=/opt/RASPA2_installed/lib
+  export LD_LIBRARY_PATH=/opt/RASPA2_installed/lib
