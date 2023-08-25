@@ -1,23 +1,20 @@
-# -*- coding: utf-8 -*-
 """Run RASPA calculation with blocked pockets."""
-import os
 import sys
+
 import click
-
+from aiida import orm
 from aiida.common import NotExistent
-from aiida.engine import run_get_pk, run
-from aiida.orm import Code, Dict, SinglefileData
-from aiida.plugins import DataFactory
+from aiida.engine import run, run_get_pk
+from importlib_resources import files
 
-# data objects
-CifData = DataFactory('cif')  # pylint: disable=invalid-name
+import aiida_raspa
 
 
 def example_block_pockets(raspa_code, submit=True):
     """Prepare and submit RASPA calculation with blocked pockets."""
 
     # parameters
-    parameters = Dict(
+    parameters = orm.Dict(
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
@@ -47,14 +44,16 @@ def example_block_pockets(raspa_code, submit=True):
                     "BlockPocketsFileName": "block_tcc1rs_methane",
                 }
             },
-        })
+        }
+    )
 
     # framework
-    pwd = os.path.dirname(os.path.realpath(__file__))
-    framework = CifData(file=os.path.join(pwd, '..', 'files', 'TCC1RS.cif'))
+    framework = orm.CifData(file=(files(aiida_raspa).parent / "examples" / "files" / "TCC1RS.cif").as_posix())
 
     # block pocket
-    block_pocket_node = SinglefileData(file=os.path.join(pwd, '..', 'files', 'block_pocket.block')).store()
+    block_pocket_node = orm.SinglefileData(
+        file=(files(aiida_raspa).parent / "examples" / "files" / "block_pocket.block").as_posix()
+    ).store()
 
     # Contructing builder
     builder = raspa_code.get_builder()
@@ -80,8 +79,10 @@ def example_block_pockets(raspa_code, submit=True):
         print("Testing RASPA with block pockets ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Average number of methane molecules/uc:",
-              res['output_parameters'].dict.tcc1rs['components']['methane']['loading_absolute_average'])
+        print(
+            "Average number of methane molecules/uc:",
+            res["output_parameters"].dict.tcc1rs["components"]["methane"]["loading_absolute_average"],
+        )
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
@@ -92,20 +93,20 @@ def example_block_pockets(raspa_code, submit=True):
         print("In order to actually submit, add '--submit'")
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
+@click.command("cli")
+@click.argument("codelabel")
+@click.option("--submit", is_flag=True, help="Actually submit calculation")
 def cli(codelabel, submit):
     """Click interface"""
     try:
-        code = Code.get_from_string(codelabel)
+        code = orm.load_code(codelabel)
     except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
+        print(f"The code '{codelabel}' does not exist")
         sys.exit(1)
     example_block_pockets(code, submit)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

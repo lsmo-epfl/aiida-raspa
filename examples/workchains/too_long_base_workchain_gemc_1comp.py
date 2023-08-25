@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
 """One-component GEMC through RaspaBaseWorkChain"""
 
 import sys
-import click
 
+import click
 from aiida.common import NotExistent
 from aiida.engine import run_get_node
 from aiida.orm import Code, Dict
+
 from aiida_raspa.workchains import RaspaBaseWorkChain
 
 
@@ -41,7 +41,7 @@ def example_base_workchain_gemc(raspa_code):
                     "BoxLengths": "30 30 30",
                     "BoxAngles": "90 90 90",
                     "ExternalTemperature": 300.0,
-                }
+                },
             },
             "Component": {
                 "methane": {
@@ -55,7 +55,8 @@ def example_base_workchain_gemc(raspa_code):
                     },
                 },
             },
-        })
+        }
+    )
 
     # Constructing builder
     builder = RaspaBaseWorkChain.get_builder()
@@ -67,10 +68,12 @@ def example_base_workchain_gemc(raspa_code):
     builder.raspa.parameters = parameters
 
     # Add handlers that could handle physics-related problems.
-    builder.handler_overrides = Dict(dict={
-        'check_gemc_box': True,
-        'check_gemc_convergence': True,
-    })  # Enable gemc handlers disabled by default.
+    builder.handler_overrides = Dict(
+        dict={
+            "check_gemc_box": True,
+            "check_gemc_convergence": True,
+        }
+    )  # Enable gemc handlers disabled by default.
 
     # Specifying the scheduler options
     builder.raspa.metadata.options = {
@@ -86,19 +89,19 @@ def example_base_workchain_gemc(raspa_code):
     assert node.exit_status == 0
 
 
-@click.command('cli')
-@click.argument('codelabel')
+@click.command("cli")
+@click.argument("codelabel")
 def cli(codelabel):
     """Click interface"""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
+        print(f"The code '{codelabel}' does not exist")
         sys.exit(1)
     example_base_workchain_gemc(code)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

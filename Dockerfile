@@ -1,4 +1,4 @@
-FROM aiidateam/aiida-core:1.6.9
+FROM aiidateam/aiida-core:2.3.1
 
 # Set HOME, PATH and RASPA_DIR variables:
 ENV PATH="/opt/RASPA2_installed/bin/:${PATH}"
@@ -36,8 +36,11 @@ RUN pip install coveralls
 
 # Copy and install aiida-raspa plugin.
 COPY . aiida-raspa
-RUN pip install ./aiida-raspa[pre-commit,test,docs]
+RUN pip install -e aiida-raspa[pre-commit,tests,docs]
 
 # Install the RASPA code to AiiDA.
 COPY .docker/opt/add-codes.sh /opt/
 COPY .docker/my_init.d/add-codes.sh /etc/my_init.d/50_add-codes.sh
+
+# COPY the examples test script
+COPY .github/workflows/run_examples.sh /home/aiida/run_examples.sh

@@ -1,29 +1,21 @@
-# -*- coding: utf-8 -*-
 """Restart from simple RASPA calculation."""
 
-import os
 import sys
+
 import click
-import pytest
-
+from aiida import orm
 from aiida.common import NotExistent
-from aiida.engine import run_get_pk, run
-from aiida.orm import Code, Dict, load_node
-from aiida.plugins import DataFactory
+from aiida.engine import run, run_get_pk
+from importlib_resources import files
 
-# data objects
-CifData = DataFactory('cif')  # pylint: disable=invalid-name
+import aiida_raspa
 
 
-def example_base_restart(raspa_code, base_calc_pk=None, submit=True):
+def example_base_restart(raspa_code, base_calc_pk, submit=True):
     """Prepare and submit restart from simple RASPA calculation."""
 
-    # This line is needed for tests only
-    if base_calc_pk is None:
-        base_calc_pk = pytest.base_calc_pk  # pylint: disable=no-member
-
     # parameters
-    parameters = Dict(
+    parameters = orm.Dict(
         dict={
             "GeneralSettings": {
                 "SimulationType": "MonteCarlo",
@@ -52,13 +44,13 @@ def example_base_restart(raspa_code, base_calc_pk=None, submit=True):
                     "CreateNumberOfMolecules": 0,
                 }
             },
-        })
+        }
+    )
 
     # framework
-    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'files', 'TCC1RS.cif'))
-
+    framework = orm.CifData(file=(files(aiida_raspa).parent / "examples" / "files" / "TCC1RS.cif").as_posix())
     # restart file
-    retrieved_parent_folder = load_node(base_calc_pk).outputs.retrieved
+    retrieved_parent_folder = orm.load_node(base_calc_pk).outputs.retrieved
 
     # Contructing builder
     builder = raspa_code.get_builder()
@@ -82,8 +74,10 @@ def example_base_restart(raspa_code, base_calc_pk=None, submit=True):
         print("Testing RASPA with simple input, restart ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Average number of methane molecules/uc:",
-              res['output_parameters'].dict.tcc1rs['components']['methane']['loading_absolute_average'])
+        print(
+            "Average number of methane molecules/uc:",
+            res["output_parameters"].dict.tcc1rs["components"]["methane"]["loading_absolute_average"],
+        )
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
@@ -95,21 +89,21 @@ def example_base_restart(raspa_code, base_calc_pk=None, submit=True):
     print("-----")
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--previous_calc', '-p', required=True, type=int, help='PK of example_base.py calculation')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
+@click.command("cli")
+@click.argument("codelabel")
+@click.option("--previous_calc", "-p", required=True, type=int, help="PK of example_base.py calculation")
+@click.option("--submit", is_flag=True, help="Actually submit calculation")
 def cli(codelabel, previous_calc, submit):
     """Click interface"""
     try:
-        code = Code.get_from_string(codelabel)
+        code = orm.Code.get_from_string(codelabel)
     except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
+        print(f"The code '{codelabel}' does not exist")
         sys.exit(1)
     example_base_restart(code, previous_calc, submit)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

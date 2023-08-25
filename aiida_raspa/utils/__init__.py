@@ -1,5 +1,8 @@
-# -*- coding: utf-8 -*-
 """Raspa utils."""
-from .base_parser import parse_base_output
 from .base_input_generator import RaspaInput
-from .inspection_tools import add_write_binary_restart, modify_number_of_cycles, increase_box_lenght
+from .base_parser import parse_base_output
+from .inspection_tools import (
+    add_write_binary_restart,
+    increase_box_lenght,
+    modify_number_of_cycles,
+)

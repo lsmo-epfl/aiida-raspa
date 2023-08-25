@@ -1,16 +1,15 @@
-# -*- coding: utf-8 -*-
 """Run RASPA calculation to compute Henry coefficient."""
 import os
 import sys
-import click
 
+import click
 from aiida.common import NotExistent
-from aiida.engine import run_get_pk, run
-from aiida.plugins import DataFactory
+from aiida.engine import run, run_get_pk
 from aiida.orm import Code, Dict
+from aiida.plugins import DataFactory
 
 # data objects
-CifData = DataFactory('cif')  # pylint: disable=invalid-name
+CifData = DataFactory("cif")  # pylint: disable=invalid-name
 
 
 def example_henry(raspa_code, submit=True):
@@ -42,11 +41,12 @@ def example_henry(raspa_code, submit=True):
                     "CreateNumberOfMolecules": 0,
                 }
             },
-        })
+        }
+    )
 
     # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
-    framework = CifData(file=os.path.join(pwd, '..', 'files', 'TCC1RS.cif'))
+    framework = CifData(file=os.path.join(pwd, "..", "files", "TCC1RS.cif"))
 
     # Contructing builder
     builder = raspa_code.get_builder()
@@ -69,8 +69,10 @@ def example_henry(raspa_code, submit=True):
         print("Testing RASPA on computing Henry coefficient ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Average Henry coefficient (methane in tcc1rs):",
-              res['output_parameters'].dict.tcc1rs['components']['methane']['henry_coefficient_average'])
+        print(
+            "Average Henry coefficient (methane in tcc1rs):",
+            res["output_parameters"].dict.tcc1rs["components"]["methane"]["henry_coefficient_average"],
+        )
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
@@ -82,20 +84,20 @@ def example_henry(raspa_code, submit=True):
     print("-----")
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
+@click.command("cli")
+@click.argument("codelabel")
+@click.option("--submit", is_flag=True, help="Actually submit calculation")
 def cli(codelabel, submit):
     """Click interface"""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
+        print(f"The code '{codelabel}' does not exist")
         sys.exit(1)
     example_henry(code, submit)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

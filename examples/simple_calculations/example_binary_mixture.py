@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 """Run RASPA calculation with components mixture."""
 
 import sys
-import click
 
+import click
 from aiida.common import NotExistent
-from aiida.engine import run_get_pk, run
+from aiida.engine import run, run_get_pk
 from aiida.orm import Code, Dict
 
 
@@ -50,7 +49,8 @@ def example_binary_misture(raspa_code, submit=True):
                     "CreateNumberOfMolecules": 30,
                 },
             },
-        })
+        }
+    )
 
     # Contructing builder
     builder = raspa_code.get_builder()
@@ -70,8 +70,10 @@ def example_binary_misture(raspa_code, submit=True):
         print("Testing RASPA with binary mixture (propane/butane) ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Average number of propane molecules/uc:",
-              res['output_parameters'].dict.box_25_angstrom['components']['propane']['loading_absolute_average'])
+        print(
+            "Average number of propane molecules/uc:",
+            res["output_parameters"].dict.box_25_angstrom["components"]["propane"]["loading_absolute_average"],
+        )
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
@@ -83,20 +85,20 @@ def example_binary_misture(raspa_code, submit=True):
     print("-----")
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
+@click.command("cli")
+@click.argument("codelabel")
+@click.option("--submit", is_flag=True, help="Actually submit calculation")
 def cli(codelabel, submit):
     """Click interface"""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
+        print(f"The code '{codelabel}' does not exist")
         sys.exit(1)
     example_binary_misture(code, submit)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter
 
 # EOF
