@@ -1,18 +1,17 @@
-# -*- coding: utf-8 -*-
 """Run simple RASPA calculation."""
 
 import os
 import sys
+
 import click
 import pytest
-
 from aiida.common import NotExistent
-from aiida.engine import run_get_pk, run
+from aiida.engine import run, run_get_pk
 from aiida.orm import Code, Dict, load_node
 from aiida.plugins import DataFactory
 
 # data objects
-CifData = DataFactory('cif')  # pylint: disable=invalid-name
+CifData = DataFactory("cif")  # pylint: disable=invalid-name
 
 
 def example_framework_box_restart(raspa_code, framework_box_calc_pk=None, submit=True):
@@ -57,10 +56,11 @@ def example_framework_box_restart(raspa_code, framework_box_calc_pk=None, submit
                     "SwapProbability": 1.0,
                 }
             },
-        })
+        }
+    )
 
     # framework
-    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'files', 'TCC1RS.cif'))
+    framework = CifData(file=os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "files", "TCC1RS.cif"))
 
     # restart file
     retrieved_parent_folder = load_node(framework_box_calc_pk).outputs.retrieved
@@ -87,10 +87,14 @@ def example_framework_box_restart(raspa_code, framework_box_calc_pk=None, submit
         print("Testing RASPA with framework and box, restart ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Average number of methane molecules/uc (tcc1rs):",
-              res['output_parameters'].dict.tcc1rs['components']['methane']['loading_absolute_average'])
-        print("Average number of methane molecules/uc (box):",
-              res['output_parameters'].dict.box_25_angstroms['components']['methane']['loading_absolute_average'])
+        print(
+            "Average number of methane molecules/uc (tcc1rs):",
+            res["output_parameters"].dict.tcc1rs["components"]["methane"]["loading_absolute_average"],
+        )
+        print(
+            "Average number of methane molecules/uc (box):",
+            res["output_parameters"].dict.box_25_angstroms["components"]["methane"]["loading_absolute_average"],
+        )
         print("OK, calculation has completed successfully")
     else:
         print("Generating test input ...")
@@ -102,21 +106,21 @@ def example_framework_box_restart(raspa_code, framework_box_calc_pk=None, submit
     print("-----")
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--previous_calc', '-p', required=True, type=int, help='PK of example_framework_box.py calculation')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
+@click.command("cli")
+@click.argument("codelabel")
+@click.option("--previous_calc", "-p", required=True, type=int, help="PK of example_framework_box.py calculation")
+@click.option("--submit", is_flag=True, help="Actually submit calculation")
 def cli(codelabel, previous_calc, submit):
     """Click interface"""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
+        print(f"The code '{codelabel}' does not exist")
         sys.exit(1)
     example_framework_box_restart(code, previous_calc, submit)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

@@ -272,3 +272,5 @@ tags
 
 # End of https://www.gitignore.io/api/vim,linux,macos,python,pycharm
 submit_test
+
+.vscode

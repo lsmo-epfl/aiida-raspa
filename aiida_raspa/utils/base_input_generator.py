@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Basic raspa input generator."""
 from copy import deepcopy
 
@@ -12,13 +11,14 @@ class RaspaInput:  # pylint: disable=too-few-public-methods
     """Convert input dictionary into input file"""
 
     def __init__(self, params):
+        """Construct a `RaspaInput` instance."""
         self.params = deepcopy(params)  # make sure the original object is not modified
         try:
             self.system_order = sorted(params["System"].keys())  # we sort the keys to keep the order in the input
-        except KeyError:
-            raise KeyError("The input dictionary should contain the System subdictionary.")
-        except AttributeError:
-            raise AttributeError("The System subdictionary should be of type dict.")
+        except KeyError as err:
+            raise KeyError("The input dictionary should contain the System subdictionary.") from err
+        except AttributeError as err:
+            raise AttributeError("The System subdictionary should be of type dict.") from err
         # file persistent this is essential for the restarts.
 
         if not self.system_order:
@@ -40,9 +40,9 @@ class RaspaInput:  # pylint: disable=too-few-public-methods
         for my_id, name in enumerate(self.system_order):
             system = section[name]
             s_type = system.pop("type")
-            output.append("{} {}".format(s_type, my_id))
+            output.append(f"{s_type} {my_id}")
             if s_type == "Framework":
-                output.append("{}FrameworkName {}".format(' ' * 3, name))
+                output.append(f"{' ' * 3}FrameworkName {name}")
             self._render_section(output, system, indent=3)
 
         # Section Component may contain parameters thar are for several systems
@@ -50,14 +50,15 @@ class RaspaInput:  # pylint: disable=too-few-public-methods
         # CreateNumberOfMolecules n1, n2  <--- n1 is for system 0, n2 is for system 1
         section = params.pop("Component")
         for my_id, (name, molecule) in enumerate(section.items()):
-            output.append('Component {} MoleculeName {}'.format(my_id, name))
+            output.append(f"Component {my_id} MoleculeName {name}")
             if "BlockPocketsFileName" in molecule:
                 if isinstance(molecule["BlockPocketsFileName"], dict):
                     try:
                         bps = self._dict_to_ordered_list(molecule["BlockPocketsFileName"])
                     except KeyError as err:
-                        raise KeyError("You did not provide BlockPocketsFileName parameter for the system '{}'".format(
-                            str(err)))
+                        raise KeyError(
+                            f"You did not provide BlockPocketsFileName parameter for the system '{str(err)}'"
+                        ) from err
 
                     molecule["BlockPocketsFileName"] = bps
                     molecule["BlockPockets"] = ["yes" if bp else "no" for bp in bps]
@@ -68,10 +69,12 @@ class RaspaInput:  # pylint: disable=too-few-public-methods
                 if isinstance(molecule["CreateNumberOfMolecules"], dict):
                     try:
                         molecule["CreateNumberOfMolecules"] = self._dict_to_ordered_list(
-                            molecule["CreateNumberOfMolecules"])
+                            molecule["CreateNumberOfMolecules"]
+                        )
                     except KeyError as err:
-                        raise KeyError("You did not provide CreateNumberOfMolecules parameter for the system {}".format(
-                            str(err)))
+                        raise KeyError(
+                            f"You did not provide CreateNumberOfMolecules parameter for the system {str(err)}"
+                        ) from err
 
             for item in ORDERED_ITEMS_COMPONENT_SECTION:
                 if item in molecule:
@@ -123,9 +126,9 @@ class RaspaInput:  # pylint: disable=too-few-public-methods
         It takes one key-value item and adds to the output file
         """
         if isinstance(val, list):
-            output.append('{}{} {}'.format(' ' * indent, key, ' '.join(str(p) for p in val)))
+            output.append(f"{' ' * indent}{key} {' '.join(str(p) for p in val)}")
         elif isinstance(val, bool):
-            val_str = 'yes' if val else 'no'
-            output.append('{}{} {}'.format(' ' * indent, key, val_str))
+            val_str = "yes" if val else "no"
+            output.append(f"{' ' * indent}{key} {val_str}")
         else:
-            output.append('{}{} {}'.format(' ' * indent, key, val))
+            output.append(f"{' ' * indent}{key} {val}")

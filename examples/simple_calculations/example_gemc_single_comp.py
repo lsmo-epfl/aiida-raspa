@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
 """Run RASPA single-component GEMC calculation"""
 
 import sys
+
 import click
 import pytest
-
 from aiida.common import NotExistent
-from aiida.engine import run_get_pk, run
+from aiida.engine import run, run_get_pk
 from aiida.orm import Code, Dict
 
 
@@ -38,7 +37,7 @@ def example_gemc_single_comp(raspa_code, submit=True):
                     "BoxLengths": "25 25 25",
                     "BoxAngles": "90 90 90",
                     "ExternalTemperature": 300.0,
-                }
+                },
             },
             "Component": {
                 "methane": {
@@ -52,7 +51,8 @@ def example_gemc_single_comp(raspa_code, submit=True):
                     },
                 },
             },
-        })
+        }
+    )
 
     # Contructing builder
     builder = raspa_code.get_builder()
@@ -72,10 +72,14 @@ def example_gemc_single_comp(raspa_code, submit=True):
         print("Testing RASPA GEMC with methane ...")
         res, pk = run_get_pk(builder)
         print("calculation pk: ", pk)
-        print("Average number of methane molecules/uc (box_one):",
-              res['output_parameters'].dict.box_one['components']['methane']['loading_absolute_average'])
-        print("Average number of methane molecules/uc (box_two):",
-              res['output_parameters'].dict.box_two['components']['methane']['loading_absolute_average'])
+        print(
+            "Average number of methane molecules/uc (box_one):",
+            res["output_parameters"].dict.box_one["components"]["methane"]["loading_absolute_average"],
+        )
+        print(
+            "Average number of methane molecules/uc (box_two):",
+            res["output_parameters"].dict.box_two["components"]["methane"]["loading_absolute_average"],
+        )
         print("OK, calculation has completed successfully")
         pytest.gemc_single_comp_calc_pk = pk
     else:
@@ -88,20 +92,20 @@ def example_gemc_single_comp(raspa_code, submit=True):
     print("-----")
 
 
-@click.command('cli')
-@click.argument('codelabel')
-@click.option('--submit', is_flag=True, help='Actually submit calculation')
+@click.command("cli")
+@click.argument("codelabel")
+@click.option("--submit", is_flag=True, help="Actually submit calculation")
 def cli(codelabel, submit):
     """Click interface"""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
+        print(f"The code '{codelabel}' does not exist")
         sys.exit(1)
     example_gemc_single_comp(code, submit)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

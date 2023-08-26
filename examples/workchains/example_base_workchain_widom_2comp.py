@@ -1,13 +1,13 @@
-# -*- coding: utf-8 -*-
 """Two-component Widom insertion through RaspaBaseWorkChain"""
 
 import os
 import sys
-import click
 
+import click
 from aiida.common import NotExistent
 from aiida.engine import run_get_node
 from aiida.orm import CifData, Code, Dict, SinglefileData
+
 from aiida_raspa.workchains import RaspaBaseWorkChain
 
 
@@ -48,15 +48,16 @@ def example_base_workchain_widom_2(raspa_code):
                     "BlockPocketsFileName": "block_tcc1rs_xenon",
                 },
             },
-        })
+        }
+    )
 
     # framework
     pwd = os.path.dirname(os.path.realpath(__file__))
-    structure = CifData(file=os.path.join(pwd, '..', 'files', 'TCC1RS.cif'))
+    structure = CifData(file=os.path.join(pwd, "..", "files", "TCC1RS.cif"))
     structure_label = structure.filename[:-4].lower()
 
-    block_pocket_node1 = SinglefileData(file=os.path.join(pwd, '..', 'files', 'block_pocket.block')).store()
-    block_pocket_node2 = SinglefileData(file=os.path.join(pwd, '..', 'files', 'block_pocket.block')).store()
+    block_pocket_node1 = SinglefileData(file=os.path.join(pwd, "..", "files", "block_pocket.block")).store()
+    block_pocket_node2 = SinglefileData(file=os.path.join(pwd, "..", "files", "block_pocket.block")).store()
 
     # Constructing builder
     builder = RaspaBaseWorkChain.get_builder()
@@ -78,8 +79,9 @@ def example_base_workchain_widom_2(raspa_code):
         "block_tcc1rs_xenon": block_pocket_node2,
     }
 
-    builder.handler_overrides = Dict(dict={'check_widom_convergence': True
-                                          })  # Enable widom convergence handler disabled by default.
+    builder.handler_overrides = Dict(
+        dict={"check_widom_convergence": True}
+    )  # Enable widom convergence handler disabled by default.
 
     # Specifying the scheduler options
     builder.raspa.metadata.options = {
@@ -95,19 +97,19 @@ def example_base_workchain_widom_2(raspa_code):
     assert node.exit_status == 0
 
 
-@click.command('cli')
-@click.argument('codelabel')
+@click.command("cli")
+@click.argument("codelabel")
 def cli(codelabel):
     """Click interface"""
     try:
         code = Code.get_from_string(codelabel)
     except NotExistent:
-        print("The code '{}' does not exist".format(codelabel))
+        print(f"The code '{codelabel}' does not exist")
         sys.exit(1)
     example_base_workchain_widom_2(code)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter
 
 # EOF

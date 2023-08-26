@@ -1,5 +1,4 @@
-[![Build Status](https://travis-ci.org/yakutovicha/aiida-raspa.svg?branch=develop)](https://travis-ci.org/yakutovicha/aiida-raspa)
-[![Coverage Status](https://coveralls.io/repos/github/yakutovicha/aiida-raspa/badge.svg?branch=develop)](https://coveralls.io/github/yakutovicha/aiida-raspa?branch=develop)
+![Build Status](https://github.com/lsmo-epfl/aiida-raspa/actions/workflows/ci.yml/badge.svg)
 [![PyPI version](https://badge.fury.io/py/aiida-raspa.svg)](https://badge.fury.io/py/aiida-raspa)
 
 # AiiDA RASPA
@@ -9,7 +8,6 @@ Designed to work with with RASPA 2.0.37 or later.
 
 # Documentation
 The documentation for this package can be found on [Read the Docs](https://aiida-raspa.readthedocs.io/en/latest/).
-
 
 # Installation
 If you use ``pip``, you can install it as:
